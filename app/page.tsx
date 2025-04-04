@@ -1,103 +1,1908 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useMemo } from "react";
+import { CourseCard } from "@/components/ui/course-card";
+import { CourseFilters } from "@/components/ui/course-filters";
+import { motion } from "framer-motion";
+import { useCategoryStore } from "@/lib/store";
+
+// Course categories mapping
+const COURSE_CATEGORIES = {
+  ALL: ["*"],
+  AI_ML: ["CAI", "CAP6617", "COT5615", "CIS6261"],
+  SYSTEMS: ["CDA", "COP5615", "CNT"],
+  THEORY: ["COT", "COP5536"],
+  SECURITY: ["CNT5410", "CIS6261"],
+  HCI: ["CEN5728", "CIS6930"],
+  SPECIAL_TOPICS: ["CIS6930"],
+  RESEARCH: ["CIS6905", "CIS6910", "CIS7979", "CIS7980", "EGN6913"],
+} as const;
+
+type CategoryKey = keyof typeof COURSE_CATEGORIES;
+
+const COURSE_INSIGHTS = {
+  COT5615: {
+    insight:
+      "Part of the ML track (MIS → ML → AML). More theoretical ML with heavy focus on math and statistics. Prof. Banerjee is known for being approachable and fair with grading.",
+    difficulty: "Moderate",
+    track: "ML Track - First Course",
+  },
+  CAP6617: {
+    insight:
+      "Part of the ML track (MIS → ML → AML). Prof. Huang is a good teacher but grades somewhat strictly.",
+    difficulty: "Moderate-Hard",
+    track: "ML Track - Third Course",
+  },
+  CAI6307: {
+    insight:
+      "Good course for NLP enthusiasts under Prof. Dorr. Be prepared for multiple assignments that can be time-intensive.",
+    difficulty: "Moderate-Hard",
+  },
+  CAP5705: {
+    insight: "Computer Graphics has a moderate workload with few assignments.",
+    difficulty: "Moderate",
+  },
+  CAP5771: {
+    insight:
+      "With Prof. Jiang, this is generally a manageable course. Based on past experience with advanced topics.",
+    difficulty: "Easy-Moderate",
+  },
+  CDA5155: {
+    insight:
+      "More EEE-oriented, covering architecture design patterns, memories, and caches. Challenging project but excellent professor. Prof. Mishra is highly regarded.",
+    difficulty: "Hard",
+  },
+  CEN5728: {
+    insight:
+      "An easier course with few assignments, but high demand makes it difficult to enroll. Popular choice among students.",
+    difficulty: "Easy",
+  },
+  CIS6261: {
+    insight:
+      "Highly recommended course. Prof. Vincent is exceptional, though the course requires dedication. Moderate difficulty but requires consistent effort.",
+    difficulty: "Moderate",
+  },
+  COP5536: {
+    insight:
+      "Taught by Prof. Sahni, a legendary UF professor. Well-structured course with potential for good grades with consistent effort.",
+    difficulty: "Moderate",
+  },
+  CNT5106C: {
+    insight:
+      "Theoretical approach similar to undergraduate CN with some advanced projects added. Requires moderate effort.",
+    difficulty: "Moderate",
+  },
+  CNT5410: {
+    insight:
+      "Challenging but rewarding for those interested in security principles and ethical hacking. Generally well-received by students.",
+    difficulty: "Hard",
+  },
+  COP5615: {
+    insight:
+      "With Prof. Dobra, it's a relatively relaxed course. Focuses on general knowledge. Easy grade with timely assignment completion.",
+    difficulty: "Easy",
+  },
+  CIS6930: {
+    insight:
+      "Special topics courses are generally not recommended unless necessary. Usually easier but may have limited learning scope.",
+    difficulty: "Varies",
+  },
+} as const;
+
+// This would typically come from an API
+const coursesData = [
+  {
+    COURSES: [
+      {
+        code: "CAI6307",
+        courseId: 38044,
+        name: "Natural Language Processing",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Covers concepts in natural language processing ranging from shallow bag-of words to richer representations and formalisms, for applications such as translation, generation, extraction, summarization, and dialogue. Classic and state-of-the-art techniques and remaining challenges are discussed, as well as recent proposals for meeting those challenges (both symbolic and machine learning approaches). Intended for graduate students doing research related to natural language processing.",
+        prerequisites:
+          "Prereq: Proficiency in programming (Python recommended) & familiarity with\nintroductory machine learning or artificial intelligence is a plus.",
+        sections: [
+          {
+            number: "1CAI",
+            classNumber: 26564,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Bonnie Dorr",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["T"],
+                meetTimeBegin: "4:05 PM",
+                meetTimeEnd: "7:05 PM",
+                meetPeriodBegin: "9",
+                meetPeriodEnd: "11",
+                meetBuilding: "LIT",
+                meetBldgCode: 655,
+                meetRoom: 101,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/11/2025 @ 8:00 PM - 10:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CAP5705",
+        courseId: 20653,
+        name: "Computer Graphics",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Display device characteristics; system considerations, display algorithms. Curve and surface generation. Lighting models and image rendering.",
+        prerequisites: "Prereq: COP 3530.",
+        sections: [
+          {
+            number: 3789,
+            classNumber: 10964,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Computer Graphics",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Alireza Entezari",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "10:40 AM",
+                meetTimeEnd: "11:30 AM",
+                meetPeriodBegin: "4",
+                meetPeriodEnd: "4",
+                meetBuilding: "CSE",
+                meetBldgCode: 42,
+                meetRoom: "E119",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/10/2025 @ 3:00 PM - 5:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CAP5771",
+        courseId: 27042,
+        name: "Introduction to Data Science",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Introducing the basics of data science including programming for data analytics, file management, relational databases, classification, clustering and regression. The foundation is laid for big data applications ranging from social networks to medical and business informatics.",
+        prerequisites:
+          "Prereq: COP 3530 Data Structures and Algorithms or equivalent.",
+        sections: [
+          {
+            number: "1XYZ",
+            classNumber: 26553,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Intro to Data Science",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Zhe Jiang",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["T"],
+                meetTimeBegin: "8:30 AM",
+                meetTimeEnd: "10:25 AM",
+                meetPeriodBegin: "2",
+                meetPeriodEnd: "3",
+                meetBuilding: "TUR",
+                meetBldgCode: 267,
+                meetRoom: "L007",
+              },
+              {
+                meetNo: 2,
+                meetDays: ["R"],
+                meetTimeBegin: "9:35 AM",
+                meetTimeEnd: "10:25 AM",
+                meetPeriodBegin: "3",
+                meetPeriodEnd: "3",
+                meetBuilding: "TUR",
+                meetBldgCode: 267,
+                meetRoom: "L007",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/8/2025 @ 3:00 PM - 5:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CAP6617",
+        courseId: 25762,
+        name: "Advanced Machine Learning",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Advanced concepts in developing computer programs that learn and improve with experience. Emphasis on methods based on probability, statistics, and optimization.",
+        prerequisites: "Prereq: CAP 6610.",
+        sections: [
+          {
+            number: "9ZYX",
+            classNumber: 23597,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Adv Machine Learning",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Kejun Huang",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["T"],
+                meetTimeBegin: "3:00 PM",
+                meetTimeEnd: "4:55 PM",
+                meetPeriodBegin: "8",
+                meetPeriodEnd: "9",
+                meetBuilding: "MCCA",
+                meetBldgCode: 495,
+                meetRoom: "G186",
+              },
+              {
+                meetNo: 2,
+                meetDays: ["R"],
+                meetTimeBegin: "4:05 PM",
+                meetTimeEnd: "4:55 PM",
+                meetPeriodBegin: "9",
+                meetPeriodEnd: "9",
+                meetBuilding: "MCCA",
+                meetBldgCode: 495,
+                meetRoom: "G186",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/12/2025 @ 10:00 AM - 12:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CDA5155",
+        courseId: 19780,
+        name: "Computer Architecture Principles",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Fundamental design issues of processor and computer architecture, a variety of design approaches for CPU, memory, and system structure.",
+        prerequisites: "Prereq: CDA 3101, COP 3530, and COP 4600.",
+        sections: [
+          {
+            number: "2XYZ",
+            classNumber: 21829,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Compu Architect Prin",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Prabhat Mishra",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["T"],
+                meetTimeBegin: "1:55 PM",
+                meetTimeEnd: "2:45 PM",
+                meetPeriodBegin: "7",
+                meetPeriodEnd: "7",
+                meetBuilding: "MCCA",
+                meetBldgCode: 495,
+                meetRoom: "G186",
+              },
+              {
+                meetNo: 2,
+                meetDays: ["R"],
+                meetTimeBegin: "1:55 PM",
+                meetTimeEnd: "3:50 PM",
+                meetPeriodBegin: "7",
+                meetPeriodEnd: "8",
+                meetBuilding: "MCCA",
+                meetBldgCode: 495,
+                meetRoom: "G186",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/11/2025 @ 3:00 PM - 5:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CEN5728",
+        courseId: 27302,
+        name: "User Experience Design",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Introduces methods and tools used in User Experience Design (UXD): the early stages of software design focused on meeting user needs. Key concepts include user research, contextual design, design thinking, ideation, iterative design, prototyping, and design documentation. Software tools used in industry are used in class projects.",
+        prerequisites: "Prereq: COP 3530 or equivalent.",
+        sections: [
+          {
+            number: 2783,
+            classNumber: 19378,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Ux Design",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Sharon Lynn Chu Yew Yee",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "11:45 AM",
+                meetTimeEnd: "12:35 PM",
+                meetPeriodBegin: "5",
+                meetPeriodEnd: "5",
+                meetBuilding: "MALA",
+                meetBldgCode: 1024,
+                meetRoom: 1000,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/9/2025 @ 10:00 AM - 12:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6261",
+        courseId: 37682,
+        name: "Trustworthy Machine Learning",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Explores research at the intersection of machine learning and security and privacy. Topics include: adversarial machine learning; differential privacy; membership inference; fairness & transparency; explainable/interpretable machine learning; deepfakes and disinformation.",
+        prerequisites:
+          "Prereq: Knowledge of programming fundamentals, familiarity with machine learning and Python is a plus.",
+        sections: [
+          {
+            number: "1XYZ",
+            classNumber: 27032,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Trustworthy Machine Learning",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Vincent Bindschaedler",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "12:50 PM",
+                meetTimeEnd: "1:40 PM",
+                meetPeriodBegin: "6",
+                meetPeriodEnd: "6",
+                meetBuilding: "MALA",
+                meetBldgCode: 1024,
+                meetRoom: 1000,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6905",
+        courseId: 17074,
+        name: "Individual Study",
+        openSeats: null,
+        termInd: " ",
+        description: "Individual Study",
+        prerequisites:
+          "Prereq: consent of faculty member supervising the study.",
+        sections: [
+          {
+            number: "144E",
+            classNumber: 10840,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: "VAR",
+            credits_min: 1,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "N",
+            LMS: "",
+            instructors: [
+              {
+                name: "Benjamin Lok",
+              },
+            ],
+            meetTimes: [],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6910",
+        courseId: 19113,
+        name: "Supervised Research",
+        openSeats: null,
+        termInd: " ",
+        description: "Supervised Research",
+        prerequisites: "Prereq: graduate status in CIS.",
+        sections: [
+          {
+            number: "11AC",
+            classNumber: 10841,
+            gradBasis: "SUS",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: "VAR",
+            credits_min: 1,
+            credits_max: 5,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "N",
+            LMS: "",
+            instructors: [
+              {
+                name: "Benjamin Lok",
+              },
+            ],
+            meetTimes: [],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6930",
+        courseId: 16806,
+        name: "Special Topics in CIS: Intro to Virtual Reality",
+        openSeats: null,
+        termInd: " ",
+        description: "Special Topics in CIS",
+        prerequisites: "Prereq: vary depending on topics.",
+        sections: [
+          {
+            number: "03TR",
+            classNumber: 23468,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Special Topics",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Alexandre Gomes de Siqueira",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["T"],
+                meetTimeBegin: "1:55 PM",
+                meetTimeEnd: "2:45 PM",
+                meetPeriodBegin: "7",
+                meetPeriodEnd: "7",
+                meetBuilding: "CSE",
+                meetBldgCode: 42,
+                meetRoom: "A101",
+              },
+              {
+                meetNo: 2,
+                meetDays: ["R"],
+                meetTimeBegin: "1:55 PM",
+                meetTimeEnd: "3:50 PM",
+                meetPeriodBegin: "7",
+                meetPeriodEnd: "8",
+                meetBuilding: "CSE",
+                meetBldgCode: 42,
+                meetRoom: "A101",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/11/2025 @ 10:00 AM - 12:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6930",
+        courseId: 16806,
+        name: "Special Topics in CIS: Sec & Priv At Risk Populations",
+        openSeats: null,
+        termInd: " ",
+        description: "Special Topics in CIS",
+        prerequisites: "Prereq: vary depending on topics.",
+        sections: [
+          {
+            number: "02TR",
+            classNumber: 23594,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Special Topics",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Kevin Butler",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["T"],
+                meetTimeBegin: "10:40 AM",
+                meetTimeEnd: "11:30 AM",
+                meetPeriodBegin: "4",
+                meetPeriodEnd: "4",
+                meetBuilding: "CSE",
+                meetBldgCode: 42,
+                meetRoom: "E119",
+              },
+              {
+                meetNo: 2,
+                meetDays: ["R"],
+                meetTimeBegin: "10:40 AM",
+                meetTimeEnd: "12:35 PM",
+                meetPeriodBegin: "4",
+                meetPeriodEnd: "5",
+                meetBuilding: "CSE",
+                meetBldgCode: 42,
+                meetRoom: "E119",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/11/2025 @ 10:00 AM - 12:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6930",
+        courseId: 16806,
+        name: "Special Topics in CIS: A.I. Ethics for Tech Leaders",
+        openSeats: null,
+        termInd: " ",
+        description: "Special Topics in CIS",
+        prerequisites: "Prereq: vary depending on topics.",
+        sections: [
+          {
+            number: "1HYB",
+            classNumber: 23802,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Special Topics",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: 'The online component of this course uses both synchronous (that is, live online) and asynchronous formats throughout the semester. Students are expected to attend sessions and are fully responsible for lecture material delivered during all "live online" meetings. Students will also work asynchronously, both individually and in teams, to complete course requirements. Synchronous class sessions to be held in WERT 370 at the indicated day time will be scheduled by the instructor in advance.',
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PD",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Sonja Schmer-Galunder",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["W"],
+                meetTimeBegin: "4:05 PM",
+                meetTimeEnd: "7:05 PM",
+                meetPeriodBegin: "9",
+                meetPeriodEnd: "11",
+                meetBuilding: "",
+                meetBldgCode: "WEB",
+                meetRoom: "",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/10/2025 @ 5:30 PM - 7:30 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6930",
+        courseId: 16806,
+        name: "Special Topics in CIS: Multimedia Expert Systems",
+        openSeats: null,
+        termInd: " ",
+        description: "Special Topics in CIS",
+        prerequisites: "Prereq: vary depending on topics.",
+        sections: [
+          {
+            number: "MWF3",
+            classNumber: 25882,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Special Topics",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Jonathan Kavalan",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "9:35 AM",
+                meetTimeEnd: "10:25 AM",
+                meetPeriodBegin: "3",
+                meetPeriodEnd: "3",
+                meetBuilding: "WM",
+                meetBldgCode: 100,
+                meetRoom: 100,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/10/2025 @ 10:00 AM - 12:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6930",
+        courseId: 16806,
+        name: "Special Topics in CIS: Adv. User Experience Design",
+        openSeats: null,
+        termInd: " ",
+        description: "Special Topics in CIS",
+        prerequisites: "Prereq: vary depending on topics.",
+        sections: [
+          {
+            number: "TR45",
+            classNumber: 26446,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Special Topics",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Lisa Anthony",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["T"],
+                meetTimeBegin: "10:40 AM",
+                meetTimeEnd: "11:30 AM",
+                meetPeriodBegin: "4",
+                meetPeriodEnd: "4",
+                meetBuilding: "CSE",
+                meetBldgCode: 42,
+                meetRoom: "E221",
+              },
+              {
+                meetNo: 2,
+                meetDays: ["R"],
+                meetTimeBegin: "10:40 AM",
+                meetTimeEnd: "12:35 PM",
+                meetPeriodBegin: "4",
+                meetPeriodEnd: "5",
+                meetBuilding: "CSE",
+                meetBldgCode: 42,
+                meetRoom: "E121",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/12/2025 @ 12:30 PM - 2:30 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6935",
+        courseId: 16685,
+        name: "Graduate Seminar",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Presentations by visiting researchers, faculty members, and graduate students.",
+        prerequisites: "",
+        sections: [
+          {
+            number: "1REG",
+            classNumber: 18549,
+            gradBasis: "SUS",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: "VAR",
+            credits_min: 1,
+            credits_max: 12,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Christina Boucher",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["F"],
+                meetTimeBegin: "10:40 AM",
+                meetTimeEnd: "11:30 AM",
+                meetPeriodBegin: "4",
+                meetPeriodEnd: "4",
+                meetBuilding: "",
+                meetBldgCode: "",
+                meetRoom: "",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/10/2025 @ 3:00 PM - 5:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+          {
+            number: "HCC1",
+            classNumber: 21831,
+            gradBasis: "SUS",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: "VAR",
+            credits_min: 1,
+            credits_max: 12,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Kyla Mcmullen",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["T"],
+                meetTimeBegin: "1:55 PM",
+                meetTimeEnd: "2:45 PM",
+                meetPeriodBegin: "7",
+                meetPeriodEnd: "7",
+                meetBuilding: "PSY",
+                meetBldgCode: 749,
+                meetRoom: 130,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/11/2025 @ 3:00 PM - 5:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS6940",
+        courseId: 18415,
+        name: "Supervised Teaching",
+        openSeats: null,
+        termInd: " ",
+        description: "A supervised teaching experience.",
+        prerequisites: "",
+        sections: [
+          {
+            number: 1,
+            classNumber: 16585,
+            gradBasis: "SUS",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "N",
+            LMS: "",
+            instructors: [
+              {
+                name: "Benjamin Lok",
+              },
+            ],
+            meetTimes: [],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS7979",
+        courseId: 18749,
+        name: "Advanced Research",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Research for doctoral students before admission to candidacy. Designed for students with a master's degree in the field of study or for students who have been accepted for a doctoral program. Not appropriate for students who have been admitted to candidacy.",
+        prerequisites: "",
+        sections: [
+          {
+            number: "14A7",
+            classNumber: 10861,
+            gradBasis: "SUS",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: "VAR",
+            credits_min: 1,
+            credits_max: 12,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Benjamin Lok",
+              },
+            ],
+            meetTimes: [],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CIS7980",
+        courseId: 18320,
+        name: "Research for Doctoral Dissertation",
+        openSeats: null,
+        termInd: " ",
+        description: "Research for Doctoral Dissertation",
+        prerequisites: "",
+        sections: [
+          {
+            number: 9404,
+            classNumber: 10862,
+            gradBasis: "SUS",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: "VAR",
+            credits_min: 1,
+            credits_max: 15,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "N",
+            LMS: "",
+            instructors: [
+              {
+                name: "Benjamin Lok",
+              },
+            ],
+            meetTimes: [],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CNT5106C",
+        courseId: 24436,
+        name: "Computer Networks",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Design, implementation, and internals of networks. Routing, congestion control, internetworking, TCP/IP, optimization, and proxy services.",
+        prerequisites: "",
+        sections: [
+          {
+            number: 7643,
+            classNumber: 11608,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Computer Networks",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Ye Xia",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 2,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "12:50 PM",
+                meetTimeEnd: "1:40 PM",
+                meetPeriodBegin: "6",
+                meetPeriodEnd: "6",
+                meetBuilding: "TUR",
+                meetBldgCode: 267,
+                meetRoom: "L005",
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/9/2025 @ 3:00 PM - 5:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "CNT5410",
+        courseId: 22890,
+        name: "Computer and Network Security",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Issues, analysis, and solutions. Viruses, worms, logic bombs, network attacks, covert channels, steganography, cryptology, authentication, digital signatures, electronic commerce.",
+        prerequisites: "Prereq: COP 3530, COT 5405. ; Coreq: COP 4600.",
+        sections: [
+          {
+            number: 1272,
+            classNumber: 11609,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Compu and Ntwk Security",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Patrick Traynor",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "12:50 PM",
+                meetTimeEnd: "1:40 PM",
+                meetPeriodBegin: "6",
+                meetPeriodEnd: "6",
+                meetBuilding: "WEIM",
+                meetBldgCode: 30,
+                meetRoom: 1064,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/11/2025 @ 12:30 PM - 2:30 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "COP5536",
+        courseId: 20873,
+        name: "Advanced Data Structures",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Development of efficient data structures used to obtain more efficient solutions to classical problems, such as those based on graph theoretical models, as well as problems that arise in application areas of contemporary interest.",
+        prerequisites: "Prereq: Undergraduate data structures.",
+        sections: [
+          {
+            number: "8ZED",
+            classNumber: 20589,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Adv Data Structures",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Sartaj Sahni",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "11:45 AM",
+                meetTimeEnd: "12:35 PM",
+                meetPeriodBegin: "5",
+                meetPeriodEnd: "5",
+                meetBuilding: "WEIM",
+                meetBldgCode: 30,
+                meetRoom: 1064,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/9/2025 @ 10:00 AM - 12:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "COP5615",
+        courseId: 16429,
+        name: "Distributed Operating System Principles",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Concepts and techniques for efficient management of computer system resources.",
+        prerequisites: "Prereq: COP 4600.",
+        sections: [
+          {
+            number: 6539,
+            classNumber: 11682,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Dist Oper Sys Princ",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Alin Dobra",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 2,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "10:40 AM",
+                meetTimeEnd: "11:30 AM",
+                meetPeriodBegin: "4",
+                meetPeriodEnd: "4",
+                meetBuilding: "MALA",
+                meetBldgCode: 1024,
+                meetRoom: 1000,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/10/2025 @ 3:00 PM - 5:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "COT5405",
+        courseId: 17533,
+        name: "Analysis of Algorithms",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Introduction and illustration of basic techniques for designing efficient algorithms and analyzing algorithm complexity.",
+        prerequisites: "Prereq: COP 3530.",
+        sections: [
+          {
+            number: "9ZED",
+            classNumber: 11720,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Analys of Algorithms",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Alin Dobra",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "9:35 AM",
+                meetTimeEnd: "10:25 AM",
+                meetPeriodBegin: "3",
+                meetPeriodEnd: "3",
+                meetBuilding: "MALA",
+                meetBldgCode: 1024,
+                meetRoom: 1000,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/10/2025 @ 10:00 AM - 12:00 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "COT5615",
+        courseId: 25653,
+        name: "Mathematics for Intelligent Systems",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Mathematical methods commonly used to develop algorithms for computer systems that exhibit intelligent behavior.",
+        prerequisites:
+          "Prereq: MAC 2313, Multivariate Calculus; MAS 3114 or MAS 4105, Linear Algebra; STA 4321, Mathematical Statistics.",
+        sections: [
+          {
+            number: 3745,
+            classNumber: 11721,
+            gradBasis: "GRD",
+            acadCareer: "GRAD",
+            display: "Math Intelligent Sys",
+            credits: 3,
+            credits_min: 3,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Arunava Banerjee",
+              },
+            ],
+            meetTimes: [
+              {
+                meetNo: 1,
+                meetDays: ["M", "W", "F"],
+                meetTimeBegin: "3:00 PM",
+                meetTimeEnd: "3:50 PM",
+                meetPeriodBegin: "8",
+                meetPeriodEnd: "8",
+                meetBuilding: "FAB",
+                meetBldgCode: 598,
+                meetRoom: 105,
+              },
+            ],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "12/12/2025 @ 12:30 PM - 2:30 PM",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+            isAICourse: true,
+          },
+        ],
+      },
+      {
+        code: "EGN5949",
+        courseId: 22923,
+        name: "Practicum/Internship/Cooperative Work Experience",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Practical cooperative engineering work under approved industrial and faculty supervision.",
+        prerequisites: "Prereq: graduate student.",
+        sections: [
+          {
+            number: 7948,
+            classNumber: 12094,
+            gradBasis: "SUS",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: "VAR",
+            credits_min: 1,
+            credits_max: 6,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "N",
+            LMS: "",
+            instructors: [
+              {
+                name: "Benjamin Lok",
+              },
+            ],
+            meetTimes: [],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+      {
+        code: "EGN6913",
+        courseId: 27610,
+        name: "Engineering Graduate Research",
+        openSeats: null,
+        termInd: " ",
+        description:
+          "Course will provide the student with supervised research in a laboratory setting.",
+        prerequisites: "",
+        sections: [
+          {
+            number: "1H45",
+            classNumber: 12142,
+            gradBasis: "SUS",
+            acadCareer: "GRAD",
+            display: "Departmentally Controlled",
+            credits: "VAR",
+            credits_min: 0,
+            credits_max: 3,
+            note: "",
+            dNote: "",
+            genEd: [],
+            quest: [],
+            sectWeb: "PC",
+            rotateTitle: "",
+            deptCode: 19140000,
+            deptName: "Computer & Information Science & Engineering",
+            openSeats: null,
+            courseFee: 0,
+            lateFlag: "N",
+            EEP: "Y",
+            LMS: "",
+            instructors: [
+              {
+                name: "Benjamin Lok",
+              },
+            ],
+            meetTimes: [],
+            addEligible: "Y",
+            grWriting: "N",
+            finalExam: "",
+            dropaddDeadline: "08/27/2025",
+            pastDeadline: false,
+            startDate: "08/21/2025",
+            endDate: "12/03/2025",
+            waitList: {
+              isEligible: "N",
+              cap: 0,
+              total: 0,
+            },
+          },
+        ],
+      },
+    ],
+    LASTCONTROLNUMBER: 3346,
+    RETRIEVEDROWS: 22,
+    TOTALROWS: 22,
+  },
+];
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("ALL");
+  const courses = coursesData[0].COURSES;
+  const { categories } = useCategoryStore();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const filteredCourses = useMemo(() => {
+    return courses.filter((course) => {
+      // Category filtering
+      if (selectedCategory !== "ALL") {
+        // Check if it's a predefined category
+        if (selectedCategory in COURSE_CATEGORIES) {
+          const categoryMatches = COURSE_CATEGORIES[
+            selectedCategory as CategoryKey
+          ]?.some((prefix) => course.code.startsWith(prefix));
+          if (!categoryMatches) return false;
+        } else {
+          // Check if it's a custom category
+          const courseCategories = localStorage.getItem(
+            `course_categories_${course.code}`
+          );
+          if (
+            !courseCategories ||
+            !JSON.parse(courseCategories).includes(selectedCategory)
+          ) {
+            return false;
+          }
+        }
+      }
+
+      // Search query filtering
+      const searchTerms = searchQuery.toLowerCase().split(" ");
+      return searchTerms.every(
+        (term) =>
+          course.name.toLowerCase().includes(term) ||
+          course.code.toLowerCase().includes(term) ||
+          course.description.toLowerCase().includes(term) ||
+          course.prerequisites.toLowerCase().includes(term) ||
+          course.sections.some((section) =>
+            section.instructors.some((instructor) =>
+              instructor.name.toLowerCase().includes(term)
+            )
+          )
+      );
+    });
+  }, [courses, searchQuery, selectedCategory, categories]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <CourseFilters
+        onSearch={setSearchQuery}
+        onCategoryChange={setSelectedCategory}
+        selectedCategory={selectedCategory}
+      />
+
+      <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mb-4 text-sm text-muted-foreground">
+          Found {filteredCourses.length} courses
         </div>
+
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {filteredCourses.map((course) => (
+            <CourseCard
+              key={`${course.code}-${Math.random().toString(16).slice(2)}`}
+              code={course.code}
+              name={course.name}
+              description={course.description}
+              prerequisites={course.prerequisites}
+              sections={course.sections}
+              insights={
+                COURSE_INSIGHTS[course.code as keyof typeof COURSE_INSIGHTS]
+              }
+            />
+          ))}
+        </motion.div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
