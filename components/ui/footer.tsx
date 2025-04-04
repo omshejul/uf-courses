@@ -11,8 +11,8 @@ export function Footer() {
           <div className="flex flex-col items-center sm:items-start gap-2">
             <p className="text-sm text-muted-foreground">Made by Om</p>
             <div className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} · Not affiliated with the University
-              of Florida · v{pkg.version}
+              © {new Date().getFullYear()} • Not affiliated with the University
+              of Florida • v{pkg.version}
             </div>
           </div>
           <div className="flex items-center gap-4">
