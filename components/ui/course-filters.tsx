@@ -125,61 +125,67 @@ export function CourseFilters({
       transition={{ duration: 0.3 }}
     >
       <div className="max-w-7xl mx-auto space-y-4">
-        <div className="flex gap-4 items-center">
-          <Input
-            type="search"
-            placeholder="Search by course name, code, description, prerequisites, or instructor..."
-            className="max-w-2xl"
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onSearch(e.target.value)
-            }
-          />
-          <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
-            Create Category
-          </Button>
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onViewChange(!isGridView)}
-              className="h-8 w-8"
-            >
-              {isGridView ? (
-                <LayoutGrid className="h-4 w-4" />
-              ) : (
-                <List className="h-4 w-4" />
-              )}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <Input
+              type="search"
+              placeholder="Search courses..."
+              className="w-full"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onSearch(e.target.value)
+              }
+            />
+          </div>
+          <div className="flex items-center gap-2 justify-between sm:justify-end">
+            <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
+              Create Category
             </Button>
-            <ThemeToggle />
-            {session ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={session.user?.image || ""}
-                        alt={session.user?.name || ""}
-                      />
-                      <AvatarFallback>{session.user?.name?.[0]}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => signOut({ callbackUrl: "/login" })}
-                  >
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button variant="outline" onClick={() => signIn("google")}>
-                Sign in
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onViewChange(!isGridView)}
+                className="h-8 w-8"
+              >
+                {isGridView ? (
+                  <LayoutGrid className="h-4 w-4" />
+                ) : (
+                  <List className="h-4 w-4" />
+                )}
               </Button>
-            )}
+              <ThemeToggle />
+              {session ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="relative h-8 w-8 rounded-full"
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage
+                          src={session.user?.image || ""}
+                          alt={session.user?.name || ""}
+                        />
+                        <AvatarFallback>
+                          {session.user?.name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => signOut({ callbackUrl: "/login" })}
+                    >
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button variant="outline" onClick={() => signIn("google")}>
+                  Sign in
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
