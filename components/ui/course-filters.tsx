@@ -119,14 +119,14 @@ export function CourseFilters({
 
   return (
     <motion.div
-      className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm p-4 border-b"
+      className="z-10 bg-background/80 backdrop-blur-sm p-4 border-b"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
       <div className="max-w-7xl mx-auto space-y-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-primary">
             UF CISE Graduate Courses
           </h1>
           <p className="text-sm text-muted-foreground">

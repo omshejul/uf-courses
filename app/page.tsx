@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { CourseCard } from "@/components/ui/course-card";
 import { CourseFilters } from "@/components/ui/course-filters";
+import { Footer } from "@/components/ui/footer";
 import { motion } from "framer-motion";
 
 // Course categories mapping
@@ -1869,7 +1870,7 @@ export default function Home() {
   }, [courses, searchQuery, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <CourseFilters
         onSearch={setSearchQuery}
         onCategoryChange={setSelectedCategory}
@@ -1878,7 +1879,7 @@ export default function Home() {
         isGridView={isGridView}
       />
 
-      <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
         <div className="mb-4 text-sm text-muted-foreground">
           Found {filteredCourses.length} courses
         </div>
@@ -1902,6 +1903,7 @@ export default function Home() {
               prerequisites={
                 course.prerequisites
                   ? course.prerequisites
+                      .replace(/Prereq:\s*/gi, "")
                       .split(/[.,;]/)
                       .filter(Boolean)
                       .map((p) => p.trim())
@@ -1915,6 +1917,8 @@ export default function Home() {
           ))}
         </motion.div>
       </main>
+
+      <Footer />
     </div>
   );
 }

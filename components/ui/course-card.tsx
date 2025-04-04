@@ -190,7 +190,7 @@ export function CourseCard({
         </div>
 
         {insights?.track && (
-          <div className="text-sm font-medium text-blue-500 bg-blue-50 dark:bg-blue-950 dark:text-blue-400 px-2 py-1 rounded inline-block">
+          <div className="text-sm my-2 font-medium text-blue-500 bg-blue-50 dark:bg-blue-950 dark:text-blue-400 px-2 py-1 rounded inline-block">
             {insights.track}
           </div>
         )}
