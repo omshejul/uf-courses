@@ -125,6 +125,16 @@ export function CourseFilters({
       transition={{ duration: 0.3 }}
     >
       <div className="max-w-7xl mx-auto space-y-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">
+            UF CISE Graduate Courses
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Browse and manage Computer & Information Science & Engineering
+            graduate courses at the University of Florida
+          </p>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
