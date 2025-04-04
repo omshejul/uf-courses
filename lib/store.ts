@@ -28,7 +28,7 @@ export const useCategoryStore = create<CategoryStore>((set) => ({
   })),
 }));
 
-export const useInsightStore = create<InsightStore>((set, get) => ({
+export const useInsightStore = create<InsightStore>((set) => ({
   insights: {},
   addInsight: async (courseCode, text, difficulty, isAnonymous) => {
     try {

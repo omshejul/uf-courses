@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { Label } from "@/components/ui/label";
@@ -79,7 +79,6 @@ export function CourseCard({
   } = useInsightStore();
   const [courseCategories, setCourseCategories] = useState<string[]>([]);
   const { data: session } = useSession();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddingInsight, setIsAddingInsight] = useState(false);
   const [insightText, setInsightText] = useState("");
   const [difficulty, setDifficulty] = useState(5);
