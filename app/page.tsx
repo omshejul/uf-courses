@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { CourseCard } from "@/components/ui/course-card";
 import { CourseFilters } from "@/components/ui/course-filters";
 import { motion } from "framer-motion";
-import { useCategoryStore } from "@/lib/store";
 
 // Course categories mapping
 const COURSE_CATEGORIES = {
@@ -1826,7 +1825,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("ALL");
   const courses = coursesData[0].COURSES;
-  const { categories } = useCategoryStore();
 
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
@@ -1867,7 +1865,7 @@ export default function Home() {
           )
       );
     });
-  }, [courses, searchQuery, selectedCategory, categories]);
+  }, [courses, searchQuery, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -1894,7 +1892,14 @@ export default function Home() {
               code={course.code}
               name={course.name}
               description={course.description}
-              prerequisites={course.prerequisites}
+              prerequisites={
+                course.prerequisites
+                  ? course.prerequisites
+                      .split(/[.,;]/)
+                      .filter(Boolean)
+                      .map((p) => p.trim())
+                  : []
+              }
               sections={course.sections}
               insights={
                 COURSE_INSIGHTS[course.code as keyof typeof COURSE_INSIGHTS]

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { InsightWithUser } from "./models/insight";
 
 interface CategoryStore {
   categories: string[];
@@ -7,17 +8,13 @@ interface CategoryStore {
   removeCategory: (category: string) => void;
 }
 
-interface UserInsight {
-  text: string;
-  difficulty: "Easy" | "Easy-Moderate" | "Moderate" | "Moderate-Hard" | "Hard";
-  timestamp: number;
-}
+
 
 interface InsightStore {
-  userInsights: Record<string, UserInsight[]>;
-  addInsight: (courseCode: string, insight: Omit<UserInsight, "timestamp">) => void;
-  removeInsight: (courseCode: string, timestamp: number) => void;
-  loadInsights: () => void;
+  insights: Record<string, InsightWithUser[]>;
+  addInsight: (courseCode: string, text: string, difficulty: number) => Promise<void>;
+  removeInsight: (courseCode: string, insightId: string) => Promise<void>;
+  fetchInsights: (courseCode: string) => Promise<void>;
 }
 
 export const useCategoryStore = create<CategoryStore>((set) => ({
@@ -32,41 +29,70 @@ export const useCategoryStore = create<CategoryStore>((set) => ({
 }));
 
 export const useInsightStore = create<InsightStore>((set) => ({
-  userInsights: {},
-  addInsight: (courseCode, insight) => {
-    set((state) => {
-      const newInsight = { ...insight, timestamp: Date.now() };
-      const courseInsights = state.userInsights[courseCode] || [];
-      const newInsights = {
-        ...state.userInsights,
-        [courseCode]: [...courseInsights, newInsight],
-      };
-      localStorage.setItem("user_insights", JSON.stringify(newInsights));
-      return { userInsights: newInsights };
-    });
-  },
-  removeInsight: (courseCode, timestamp) => {
-    set((state) => {
-      const courseInsights = state.userInsights[courseCode] || [];
-      const newCourseInsights = courseInsights.filter(
-        (insight) => insight.timestamp !== timestamp
-      );
-      const newInsights = {
-        ...state.userInsights,
-        [courseCode]: newCourseInsights,
-      };
-      localStorage.setItem("user_insights", JSON.stringify(newInsights));
-      return { userInsights: newInsights };
-    });
-  },
-  loadInsights: () => {
-    const stored = localStorage.getItem("user_insights");
-    if (stored) {
-      try {
-        set({ userInsights: JSON.parse(stored) });
-      } catch (e) {
-        console.error("Failed to load user insights:", e);
+  insights: {},
+  addInsight: async (courseCode, text, difficulty) => {
+    try {
+      const response = await fetch("/api/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseCode, text, difficulty }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add insight");
       }
+
+      const newInsight = await response.json();
+      set((state) => ({
+        insights: {
+          ...state.insights,
+          [courseCode]: [newInsight, ...(state.insights[courseCode] || [])],
+        },
+      }));
+    } catch (error) {
+      console.error("Error adding insight:", error);
+      throw error;
+    }
+  },
+  removeInsight: async (courseCode, insightId) => {
+    try {
+      const response = await fetch(`/api/insights?id=${insightId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to remove insight");
+      }
+
+      set((state) => ({
+        insights: {
+          ...state.insights,
+          [courseCode]: state.insights[courseCode]?.filter(
+            (insight) => insight._id?.toString() !== insightId
+          ) || [],
+        },
+      }));
+    } catch (error) {
+      console.error("Error removing insight:", error);
+      throw error;
+    }
+  },
+  fetchInsights: async (courseCode) => {
+    try {
+      const response = await fetch(`/api/insights?courseCode=${courseCode}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch insights");
+      }
+      const insights = await response.json();
+      set((state) => ({
+        insights: {
+          ...state.insights,
+          [courseCode]: insights,
+        },
+      }));
+    } catch (error) {
+      console.error("Error fetching insights:", error);
+      throw error;
     }
   },
 })); 

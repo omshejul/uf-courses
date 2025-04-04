@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useCategoryStore } from "@/lib/store";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useSession, signIn, signOut } from "next-auth/react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const DEFAULT_CATEGORIES = {
   ALL: ["*"],
@@ -56,6 +64,7 @@ export function CourseFilters({
     useCategoryStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const { data: session } = useSession();
 
   // Load categories from localStorage on client-side only
   useEffect(() => {
@@ -123,8 +132,37 @@ export function CourseFilters({
           <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
             Create Category
           </Button>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
+            {session ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={session.user?.image || ""}
+                        alt={session.user?.name || ""}
+                      />
+                      <AvatarFallback>{session.user?.name?.[0]}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                  >
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" onClick={() => signIn("google")}>
+                Sign in
+              </Button>
+            )}
           </div>
         </div>
 
@@ -156,7 +194,7 @@ export function CourseFilters({
 
         <div className="flex gap-2 flex-wrap">
           {/* Default Categories */}
-          {Object.entries(DEFAULT_CATEGORIES).map(([key, _]) => (
+          {Object.entries(DEFAULT_CATEGORIES).map(([key]) => (
             <Button
               key={key}
               variant={selectedCategory === key ? "secondary" : "ghost"}
