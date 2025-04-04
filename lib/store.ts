@@ -12,7 +12,7 @@ interface CategoryStore {
 
 interface InsightStore {
   insights: Record<string, InsightWithUser[]>;
-  addInsight: (courseCode: string, text: string, difficulty: number) => Promise<void>;
+  addInsight: (courseCode: string, text: string, difficulty: number, isAnonymous: boolean) => Promise<void>;
   removeInsight: (courseCode: string, insightId: string) => Promise<void>;
   fetchInsights: (courseCode: string) => Promise<void>;
 }
@@ -28,14 +28,14 @@ export const useCategoryStore = create<CategoryStore>((set) => ({
   })),
 }));
 
-export const useInsightStore = create<InsightStore>((set) => ({
+export const useInsightStore = create<InsightStore>((set, get) => ({
   insights: {},
-  addInsight: async (courseCode, text, difficulty) => {
+  addInsight: async (courseCode, text, difficulty, isAnonymous) => {
     try {
       const response = await fetch("/api/insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseCode, text, difficulty }),
+        body: JSON.stringify({ courseCode, text, difficulty, isAnonymous }),
       });
 
       if (!response.ok) {

@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LayoutGrid, List } from "lucide-react";
 
 export const DEFAULT_CATEGORIES = {
   ALL: ["*"],
@@ -53,12 +54,16 @@ interface CourseFiltersProps {
     | "HCI"
     | "SPECIAL_TOPICS"
     | "RESEARCH";
+  onViewChange: (isGrid: boolean) => void;
+  isGridView: boolean;
 }
 
 export function CourseFilters({
   onSearch,
   onCategoryChange,
   selectedCategory,
+  onViewChange,
+  isGridView,
 }: CourseFiltersProps) {
   const { categories, setCategories, addCategory, removeCategory } =
     useCategoryStore();
@@ -133,6 +138,18 @@ export function CourseFilters({
             Create Category
           </Button>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onViewChange(!isGridView)}
+              className="h-8 w-8"
+            >
+              {isGridView ? (
+                <LayoutGrid className="h-4 w-4" />
+              ) : (
+                <List className="h-4 w-4" />
+              )}
+            </Button>
             <ThemeToggle />
             {session ? (
               <DropdownMenu>

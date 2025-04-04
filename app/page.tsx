@@ -1824,6 +1824,7 @@ const coursesData = [
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("ALL");
+  const [isGridView, setIsGridView] = useState(true);
   const courses = coursesData[0].COURSES;
 
   const filteredCourses = useMemo(() => {
@@ -1873,6 +1874,8 @@ export default function Home() {
         onSearch={setSearchQuery}
         onCategoryChange={setSelectedCategory}
         selectedCategory={selectedCategory}
+        onViewChange={setIsGridView}
+        isGridView={isGridView}
       />
 
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -1881,7 +1884,11 @@ export default function Home() {
         </div>
 
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          className={
+            isGridView
+              ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+              : "flex flex-col gap-4"
+          }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}

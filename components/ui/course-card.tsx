@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -23,6 +22,8 @@ import { useSession } from "next-auth/react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import type { InsightWithUser } from "@/lib/models/insight";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 const dayCodeToName = (code: string): string => {
   const days: Record<string, string> = {
@@ -79,7 +80,10 @@ export function CourseCard({
   const [courseCategories, setCourseCategories] = useState<string[]>([]);
   const { data: session } = useSession();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newInsight, setNewInsight] = useState({ text: "", difficulty: 5 });
+  const [isAddingInsight, setIsAddingInsight] = useState(false);
+  const [insightText, setInsightText] = useState("");
+  const [difficulty, setDifficulty] = useState(5);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   useEffect(() => {
     fetchInsights(code);
@@ -110,14 +114,16 @@ export function CourseCard({
     setCourseCategories(newCategories);
   };
 
-  const handleSubmitInsight = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitInsight = async () => {
     if (!session) return;
+    if (!insightText.trim()) return;
 
     try {
-      await addInsight(code, newInsight.text, newInsight.difficulty);
-      setNewInsight({ text: "", difficulty: 5 });
-      setIsDialogOpen(false);
+      await addInsight(code, insightText.trim(), difficulty, isAnonymous);
+      setInsightText("");
+      setDifficulty(5);
+      setIsAnonymous(false);
+      setIsAddingInsight(false);
     } catch (error) {
       console.error("Failed to add insight:", error);
     }
@@ -198,7 +204,7 @@ export function CourseCard({
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Course Insights</h3>
             {session && (
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <Dialog open={isAddingInsight} onOpenChange={setIsAddingInsight}>
                 <DialogTrigger asChild>
                   <Button variant="outline">Add Insight</Button>
                 </DialogTrigger>
@@ -211,36 +217,42 @@ export function CourseCard({
                       </div>
                     </DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmitInsight} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="text">Your Insight</Label>
-                      <Input
-                        id="text"
-                        value={newInsight.text}
-                        onChange={(e) =>
-                          setNewInsight({ ...newInsight, text: e.target.value })
-                        }
-                        placeholder="Share your experience with this course..."
-                        required
-                      />
-                    </div>
+                  <div className="mt-4 space-y-4">
+                    <Textarea
+                      placeholder="Share your experience with this course..."
+                      value={insightText}
+                      onChange={(e) => setInsightText(e.target.value)}
+                    />
                     <div className="space-y-2">
                       <Label>Difficulty (1-10)</Label>
                       <Slider
-                        value={[newInsight.difficulty]}
-                        onValueChange={([value]) =>
-                          setNewInsight({ ...newInsight, difficulty: value })
-                        }
                         min={1}
                         max={10}
                         step={1}
+                        value={[difficulty]}
+                        onValueChange={(value) => setDifficulty(value[0])}
                       />
-                      <div className="text-center">{newInsight.difficulty}</div>
                     </div>
-                    <Button type="submit" className="w-full">
-                      Submit
-                    </Button>
-                  </form>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="anonymous"
+                        checked={isAnonymous}
+                        onCheckedChange={(checked: boolean) =>
+                          setIsAnonymous(checked)
+                        }
+                      />
+                      <Label htmlFor="anonymous">Post anonymously</Label>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddingInsight(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSubmitInsight}>Submit</Button>
+                    </div>
+                  </div>
                 </DialogContent>
               </Dialog>
             )}
@@ -255,7 +267,9 @@ export function CourseCard({
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
                     <span>Difficulty: {insights.difficulty}</span>
                     <span>•</span>
-                    <span>Added by Om</span>
+                    <span>Provided by a Senior</span>
+                    <span>•</span>
+                    <span>Credit Kaushik</span>
                   </div>
                 </div>
               </div>

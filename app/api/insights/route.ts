@@ -30,7 +30,13 @@ export async function GET(request: Request) {
       },
       {
         $addFields: {
-          user: { $arrayElemAt: ["$userInfo", 0] },
+          user: {
+            $cond: {
+              if: "$isAnonymous",
+              then: null,
+              else: { $arrayElemAt: ["$userInfo", 0] }
+            }
+          }
         },
       },
       {
@@ -55,9 +61,9 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { courseCode, text, difficulty } = body;
+  const { courseCode, text, difficulty, isAnonymous } = body;
 
-  if (!courseCode || !text || !difficulty) {
+  if (!courseCode || !text || difficulty === undefined) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -70,13 +76,21 @@ export async function POST(request: Request) {
     text,
     difficulty,
     createdAt: new Date(),
+    isAnonymous: isAnonymous || false,
   };
 
   const result = await db.collection("insights").insertOne(insight);
 
+  const userInfo = isAnonymous ? null : {
+    _id: session.user.id,
+    name: session.user.name,
+    image: session.user.image,
+  };
+
   return NextResponse.json({
     ...insight,
     _id: result.insertedId,
+    user: userInfo,
   });
 }
 

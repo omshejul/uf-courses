@@ -7,6 +7,7 @@ export interface Insight {
   text: string;
   difficulty: number;
   createdAt: Date;
+  isAnonymous: boolean;
 }
 
 export interface InsightWithUser extends Insight {
