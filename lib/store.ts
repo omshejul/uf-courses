@@ -21,7 +21,7 @@ interface InsightStore {
   fetchInsights: (courseCode: string) => Promise<void>;
 }
 
-export const useCategoryStore = create<CategoryStore>((set, get) => ({
+export const useCategoryStore = create<CategoryStore>((set) => ({
   categories: [],
   courseCategoryMap: {},
   setCategories: (categories) => set({ categories }),
@@ -143,7 +143,7 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
       set((state) => ({
         courseCategoryMap: {
           ...state.courseCategoryMap,
-          [courseCode]: assignments.map((a: any) => a.categoryId),
+          [courseCode]: assignments.map((a: { categoryId: string }) => a.categoryId),
         },
       }));
     } catch (error) {

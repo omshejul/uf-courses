@@ -7570,7 +7570,7 @@ export default function Home() {
           )
       );
     });
-  }, [courses, searchQuery, selectedCategory, selectedDepartment]);
+  }, [courses, searchQuery, selectedCategory]);
 
   const breakpointColumnsObj = {
     default: 3,

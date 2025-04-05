@@ -16,14 +16,15 @@ export function Footer() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="outline" className="w-full" size="icon" asChild>
               <a
                 href="https://github.com/omshejul/uf-courses"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2"
+                className="flex items-center px-3 gap-2"
               >
                 <GitHubLogoIcon className="h-5 w-5" />
+                <span>OpenSourced</span>
               </a>
             </Button>
           </div>

@@ -19,7 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutGrid, List } from "lucide-react";
 
 export const DEFAULT_CATEGORIES = {
   ALL: ["*"],
@@ -46,8 +45,6 @@ export function CourseFilters({
   onSearch,
   onCategoryChange,
   selectedCategory,
-  onViewChange,
-  isGridView,
   onDepartmentChange,
   selectedDepartment,
 }: CourseFiltersProps) {

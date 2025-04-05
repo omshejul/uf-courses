@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth";
 import clientPromise from "../../../lib/mongodb";
 import { ObjectId } from "mongodb";
-import type { Category, CourseCategory } from "../../../lib/models/category";
+import type { Category } from "../../../lib/models/category";
 
 // Get all categories for the current user
 export async function GET() {
