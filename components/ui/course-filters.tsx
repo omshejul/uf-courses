@@ -19,9 +19,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FiTrash2 } from "react-icons/fi";
 
 export const DEFAULT_CATEGORIES = {
   ALL: ["*"],
+  CORE: [
+    "CAP5100",
+    "CAP5510",
+    "COP5725",
+    "CDA5155",
+    "CEN5035",
+    "CIS5371",
+    "CNT5106C",
+    "COP5536",
+    "COP5556",
+    "COP5615",
+    "COT5405",
+    "COT5615",
+  ],
   AI_ML: ["CAI", "CAP6617", "COT5615", "CIS6261"],
   SYSTEMS: ["CDA", "COP5615", "CNT"],
   THEORY: ["COT", "COP5536"],
@@ -191,57 +206,35 @@ export function CourseFilters({
                 variant={selectedCategory === key ? "secondary" : "ghost"}
                 size="sm"
                 className="text-sm px-2 py-0 h-8"
-                onClick={() =>
-                  onCategoryChange(
-                    key as
-                      | "ALL"
-                      | "AI_ML"
-                      | "SYSTEMS"
-                      | "THEORY"
-                      | "SECURITY"
-                      | "HCI"
-                      | "SPECIAL_TOPICS"
-                      | "RESEARCH"
-                  )
-                }
+                onClick={() => onCategoryChange(key)}
               >
                 {key.replace(/_/g, " ")}
               </Button>
             ))}
 
             {/* Custom Categories */}
-            {session &&
-              categories.map((category) => (
-                <div
-                  key={category._id?.toString()}
-                  className="flex items-center gap-0.5 sm:gap-1"
+            {categories.map((category) => (
+              <div
+                key={category._id?.toString()}
+                className={`text-sm px-2 pl-3 py-0 h-8 flex items-center gap-1 rounded-lg cursor-pointer ${
+                  selectedCategory === category._id?.toString()
+                    ? "bg-secondary text-secondary-foreground"
+                    : "bg-ghost text-ghost-foreground"
+                }`}
+                onClick={() => onCategoryChange(category._id?.toString() || "")}
+              >
+                {category.name}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveCategory(category._id?.toString() || "");
+                  }}
+                  className="ml-1 bg-red-500/20 text-xs opacity-50 hover:opacity-100 rounded-full p-1"
                 >
-                  <Button
-                    variant={
-                      selectedCategory === category._id?.toString()
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    size="sm"
-                    className="text-sm px-2 py-0 h-8"
-                    onClick={() =>
-                      onCategoryChange(category._id?.toString() || "")
-                    }
-                  >
-                    {category.name}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-1 h-8"
-                    onClick={() =>
-                      handleRemoveCategory(category._id?.toString() || "")
-                    }
-                  >
-                    ×
-                  </Button>
-                </div>
-              ))}
+                  <FiTrash2 className="text-red-500" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </div>

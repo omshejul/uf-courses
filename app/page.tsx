@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { CourseCard, generateAcronym } from "@/components/ui/course-card";
+import {
+  CourseCard,
+  generateAcronym,
+  CS_UNAVAILABLE_COURSES,
+} from "@/components/ui/course-card";
 import { CourseFilters } from "@/components/ui/course-filters";
 import { Footer } from "@/components/ui/footer";
 import { motion } from "framer-motion";
@@ -12,11 +16,24 @@ import Cookies from "js-cookie";
 import { useCourseStore } from "@/lib/store/course-store";
 import { coursesData, ECE_COURSES, COURSE_INSIGHTS } from "../lib/data";
 import type { Course } from "@/lib/types";
-import { FiLoader } from "react-icons/fi";
 
 // Course categories mapping
 const COURSE_CATEGORIES = {
   ALL: ["*"],
+  CORE: [
+    "CAP5100",
+    "CAP5510",
+    "COP5725",
+    "CDA5155",
+    "CEN5035",
+    "CIS5371",
+    "CNT5106C",
+    "COP5536",
+    "COP5556",
+    "COP5615",
+    "COT5405",
+    "COT5615",
+  ],
   AI_ML: ["CAI", "CAP6617", "COT5615", "CIS6261"],
   SYSTEMS: ["CDA", "COP5615", "CNT"],
   THEORY: ["COT", "COP5536"],
@@ -41,6 +58,7 @@ export default function Home() {
   );
   const fetchAllData = useCourseStore((state) => state.fetchAllData);
   const isLoading = useCourseStore((state) => state.isLoading);
+  const courseStore = useCourseStore();
 
   // Handle cookie after mount to avoid hydration mismatch
   useEffect(() => {
@@ -95,22 +113,19 @@ export default function Home() {
   const filteredCourses = useMemo(() => {
     if (!mounted) return [];
 
-    return courses.filter((course) => {
+    const filtered = courses.filter((course) => {
       // Category filtering
       if (selectedCategory !== "ALL") {
+        // Check if it's a default category
         if (selectedCategory in COURSE_CATEGORIES) {
           const categoryMatches = COURSE_CATEGORIES[
             selectedCategory as CategoryKey
           ]?.some((prefix) => course.code.startsWith(prefix));
           if (!categoryMatches) return false;
         } else {
-          const courseCategories = localStorage.getItem(
-            `course_categories_${course.code}`
-          );
-          if (
-            !courseCategories ||
-            !JSON.parse(courseCategories).includes(selectedCategory)
-          ) {
+          // Check custom categories
+          const courseInfo = courseStore.courseData[course.code];
+          if (!courseInfo?.categories.includes(selectedCategory)) {
             return false;
           }
         }
@@ -133,7 +148,16 @@ export default function Home() {
           )
       );
     });
-  }, [courses, searchQuery, selectedCategory, mounted]);
+
+    // Sort courses: available courses first, then unavailable courses
+    return filtered.sort((a, b) => {
+      const aUnavailable = CS_UNAVAILABLE_COURSES.has(a.code);
+      const bUnavailable = CS_UNAVAILABLE_COURSES.has(b.code);
+      if (aUnavailable && !bUnavailable) return 1;
+      if (!aUnavailable && bUnavailable) return -1;
+      return 0;
+    });
+  }, [courses, searchQuery, selectedCategory, mounted, courseStore.courseData]);
 
   // Avoid hydration mismatch by not rendering until mounted
   if (!mounted) {
@@ -162,12 +186,6 @@ export default function Home() {
       />
 
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 relative">
-        {isLoading && (
-          <div className="absolute inset-0 bg-background/50 flex top-[150px] justify-center z-10">
-            <FiLoader className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        )}
-
         <div className="flex justify-between items-center mb-4">
           <div className="text-sm text-muted-foreground">
             Found {filteredCourses.length} courses

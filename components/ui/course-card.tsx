@@ -28,7 +28,6 @@ import { signIn } from "next-auth/react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCourseStore } from "@/lib/store/course-store";
-import { FiLoader } from "react-icons/fi";
 
 const dayCodeToName = (code: string): string => {
   const days: Record<string, string> = {
@@ -79,6 +78,32 @@ interface CourseCardProps {
   isExpanded?: boolean;
   onToggleExpand?: () => void;
 }
+
+export const CS_CORE_COURSES = new Set([
+  "CAP5100",
+  "CAP5510",
+  "COP5725",
+  "CDA5155",
+  "CEN5035",
+  "CIS5371",
+  "CNT5106C",
+  "COP5536",
+  "COP5556",
+  "COP5615",
+  "COT5405",
+  "COT5615",
+]);
+export const CS_UNAVAILABLE_COURSES = new Set([
+  "CAI6307",
+  "CIS6905",
+  "CIS6910",
+  "CIS6935",
+  "CIS6940",
+  "CIS7979",
+  "CIS7980",
+  "EGN5949",
+  "EGN6913",
+]);
 
 export function CourseCard({
   code,
@@ -148,7 +173,8 @@ export function CourseCard({
     <Card
       className={cn(
         "relative",
-        isExpanded ? "h-auto" : "h-[300px] overflow-hidden"
+        isExpanded ? "h-auto" : "h-[300px] overflow-hidden",
+        CS_UNAVAILABLE_COURSES.has(code) && "order-last"
       )}
     >
       <CardContent className="relative">
@@ -170,7 +196,19 @@ export function CourseCard({
                 )}
               </span>
             </h2>
-            <h3 className="text-xl text-muted-foreground">{name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl text-muted-foreground">{name}</h3>
+              {CS_CORE_COURSES.has(code) && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full">
+                  Core
+                </span>
+              )}
+              {CS_UNAVAILABLE_COURSES.has(code) && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 rounded-full">
+                  Unavailable
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="text-sm font-medium">
@@ -221,13 +259,6 @@ export function CourseCard({
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           {description}
         </p>
-
-        {/* Show loading state */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-background/50 flex top-[150px] justify-center z-10">
-            <FiLoader className="w-4 h-4 animate-spin text-primary" />
-          </div>
-        )}
 
         {/* Show error state */}
         {error && (
@@ -465,7 +496,6 @@ export function CourseCard({
         <div className="flex gap-2 pt-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              {/* dont remove margin bottom */}
               <Button
                 size="sm"
                 className="mb-8"
@@ -475,23 +505,19 @@ export function CourseCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              {allCategories.map((category: Category) => (
-                <DropdownMenuItem
-                  key={category._id?.toString()}
-                  onClick={() =>
-                    handleToggleCategory(category._id?.toString() || "")
-                  }
-                >
-                  <span className="mr-2">
-                    {courseInfo.categories.includes(
-                      category._id?.toString() || ""
-                    )
-                      ? "✓"
-                      : ""}
-                  </span>
-                  {category.name}
-                </DropdownMenuItem>
-              ))}
+              {allCategories.map((category: Category) => {
+                const categoryId = category._id?.toString() || "";
+                const isInCategory = courseInfo.categories.includes(categoryId);
+                return (
+                  <DropdownMenuItem
+                    key={categoryId}
+                    onClick={() => handleToggleCategory(categoryId)}
+                  >
+                    <span className="mr-2">{isInCategory ? "✓" : ""}</span>
+                    {category.name}
+                  </DropdownMenuItem>
+                );
+              })}
               {allCategories.length === 0 && (
                 <DropdownMenuItem disabled>
                   Create a category first
