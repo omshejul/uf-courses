@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { CourseCard } from "@/components/ui/course-card";
+import { CourseCard, generateAcronym } from "@/components/ui/course-card";
 import { CourseFilters } from "@/components/ui/course-filters";
 import { Footer } from "@/components/ui/footer";
 import { motion } from "framer-motion";
@@ -1854,12 +1854,14 @@ export default function Home() {
 
       // Search query filtering
       const searchTerms = searchQuery.toLowerCase().split(" ");
+      const acronym = generateAcronym(course.name);
       return searchTerms.every(
         (term) =>
           course.name.toLowerCase().includes(term) ||
           course.code.toLowerCase().includes(term) ||
           course.description.toLowerCase().includes(term) ||
           course.prerequisites.toLowerCase().includes(term) ||
+          acronym.toLowerCase().includes(term) ||
           course.sections.some((section) =>
             section.instructors.some((instructor) =>
               instructor.name.toLowerCase().includes(term)

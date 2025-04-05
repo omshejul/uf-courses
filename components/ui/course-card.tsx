@@ -38,6 +38,17 @@ const dayCodeToName = (code: string): string => {
   return days[code] || code;
 };
 
+export const generateAcronym = (name: string): string => {
+  // Split by spaces and get first letter of each word, excluding common words
+  const commonWords = ["of", "the", "in", "and", "for", "to", "a", "an"];
+  return name
+    .split(" ")
+    .filter((word) => !commonWords.includes(word.toLowerCase()))
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+};
+
 interface CourseCardProps {
   code: string;
   name: string;
@@ -138,15 +149,25 @@ export function CourseCard({
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle>
-          {code} - {name}
-        </CardTitle>
-      </CardHeader>
       <CardContent>
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold">{code}</h2>
+            <h2
+              className="text-2xl font-bold"
+              data-course-acronym={generateAcronym(name)}
+            >
+              <span className="sr-only">
+                {code} {generateAcronym(name)} {name}
+              </span>
+              <span aria-hidden="true">
+                {code}
+                {name && (
+                  <span className="ml-2 text-muted-foreground">
+                    - {generateAcronym(name)}
+                  </span>
+                )}
+              </span>
+            </h2>
             <h3 className="text-xl text-muted-foreground">{name}</h3>
           </div>
           <div className="flex flex-col items-end gap-2">
