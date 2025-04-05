@@ -481,7 +481,12 @@ export function CourseCard({
         <div className="flex gap-2 pt-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" onClick={() => !session && signIn("google")}>
+              {/* dont remove margin bottom */}
+              <Button
+                size="sm"
+                className="mb-8"
+                onClick={() => !session && signIn("google")}
+              >
                 Add to Category
               </Button>
             </DropdownMenuTrigger>
