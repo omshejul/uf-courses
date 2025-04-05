@@ -50,7 +50,7 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
           ...Object.fromEntries(
             courseCodes.map(code => [code, {
               insights: data[code]?.insights || [],
-              categories: data[code]?.categories?.map((c: any) => c.categoryId?.toString()) || [],
+              categories: data[code]?.categories?.map((c: { categoryId: string }) => c.categoryId.toString()) || [],
             }])
           )
         },

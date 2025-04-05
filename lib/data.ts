@@ -1,20 +1,5 @@
 import type { Course, CourseInsight } from "./types";
 
-const CS_MandatoryCourses: { code: string; name: string }[] = [
-  { code: "CAP5100", name: "Human-Computer Interaction" },
-  { code: "CAP5510", name: "Bioinformatics" },
-  { code: "COP5725", name: "Database Management Systems" },
-  { code: "CDA5155", name: "Computer Architecture Principles" },
-  { code: "CEN5035", name: "Software Engineering" },
-  { code: "CIS5371", name: "Introduction to Cryptography" },
-  { code: "CNT5106C", name: "Introduction to Computer Networks" },
-  { code: "COP5536", name: "Advanced Data Structures" },
-  { code: "COP5556", name: "Programming Language Principles" },
-  { code: "COP5615", name: "Distributed Operating System Principles" },
-  { code: "COT5405", name: "Analysis of Algorithms" },
-  { code: "COT5615", name: "Math for Intelligent Systems" },
-];
-
 
 
 

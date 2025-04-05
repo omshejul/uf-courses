@@ -57,7 +57,6 @@ export default function Home() {
     "CS"
   );
   const fetchAllData = useCourseStore((state) => state.fetchAllData);
-  const isLoading = useCourseStore((state) => state.isLoading);
   const courseStore = useCourseStore();
 
   // Handle cookie after mount to avoid hydration mismatch

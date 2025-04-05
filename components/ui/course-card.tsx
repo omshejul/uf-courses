@@ -124,7 +124,6 @@ export function CourseCard({
   const {
     courseData,
     allCategories,
-    isLoading,
     error,
     addInsight,
     removeInsight,
