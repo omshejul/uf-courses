@@ -11,12 +11,19 @@ import { Footer } from "@/components/ui/footer";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Masonry from "react-masonry-css";
-import { List, LayoutGrid } from "lucide-react";
+import { List, LayoutGrid, Settings2 } from "lucide-react";
 import Cookies from "js-cookie";
 import { useCourseStore } from "@/lib/store/course-store";
 import { coursesData, ECE_COURSES, COURSE_INSIGHTS } from "../lib/data";
 import type { Course } from "@/lib/types";
 import { useSession } from "next-auth/react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 // Course categories mapping
 const COURSE_CATEGORIES = {
@@ -46,6 +53,28 @@ const COURSE_CATEGORIES = {
 
 type CategoryKey = keyof typeof COURSE_CATEGORIES;
 
+interface FieldVisibility {
+  // Course identifiers
+  code: boolean;
+  acronym: boolean;
+  name: boolean;
+
+  // Course badges
+  coreBadge: boolean;
+  trackBadge: boolean;
+  unavailableBadge: boolean;
+
+  // Course content
+  description: boolean;
+  prerequisites: boolean;
+  instructors: boolean;
+  meetTimes: boolean;
+  insights: boolean;
+  categories: boolean;
+  credits: boolean;
+  difficulty: boolean;
+}
+
 export default function Home() {
   // Use useState with a default value to avoid hydration mismatch
   const [mounted, setMounted] = useState(false);
@@ -61,6 +90,27 @@ export default function Home() {
   const courseStore = useCourseStore();
   const { data: session } = useSession();
   const error = useCourseStore((state) => state.error);
+  const [fieldVisibility, setFieldVisibility] = useState<FieldVisibility>({
+    // Course identifiers
+    code: true,
+    acronym: true,
+    name: true,
+
+    // Course badges
+    coreBadge: true,
+    trackBadge: true,
+    unavailableBadge: true,
+
+    // Course content
+    description: true,
+    prerequisites: true,
+    instructors: true,
+    meetTimes: true,
+    insights: true,
+    categories: true,
+    credits: true,
+    difficulty: true,
+  });
 
   // Handle cookie after mount to avoid hydration mismatch
   useEffect(() => {
@@ -91,6 +141,28 @@ export default function Home() {
       fetchAllData(courseCodes);
     }
   }, [courses, fetchAllData, mounted]);
+
+  // Save field visibility to localStorage
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem("fieldVisibility", JSON.stringify(fieldVisibility));
+    }
+  }, [fieldVisibility, mounted]);
+
+  // Load field visibility from localStorage
+  useEffect(() => {
+    const savedVisibility = localStorage.getItem("fieldVisibility");
+    if (savedVisibility) {
+      setFieldVisibility(JSON.parse(savedVisibility));
+    }
+  }, []);
+
+  const toggleField = (field: keyof FieldVisibility) => {
+    setFieldVisibility((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
 
   const toggleAllCards = () => {
     if (areAllCardsExpanded) {
@@ -196,6 +268,152 @@ export default function Home() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="px-2 lg:px-3 flex items-center gap-2"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Customize View</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full" align="end">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium leading-none mb-3">
+                      Course Header
+                    </h4>
+                    <div className="space-y-0">
+                      {["code", "acronym", "name"].map((field) => (
+                        <div
+                          key={field}
+                          className="flex items-center space-x-2 cursor-pointer"
+                          onClick={() =>
+                            toggleField(field as keyof FieldVisibility)
+                          }
+                        >
+                          <Checkbox
+                            id={field}
+                            checked={
+                              fieldVisibility[field as keyof FieldVisibility]
+                            }
+                            onCheckedChange={() =>
+                              toggleField(field as keyof FieldVisibility)
+                            }
+                          />
+                          <Label htmlFor={field} className="capitalize flex-1">
+                            {field}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium leading-none mb-3">
+                      Course Badges
+                    </h4>
+                    <div className="space-y-0">
+                      {[
+                        { id: "coreBadge", label: "Core" },
+                        { id: "trackBadge", label: "Track" },
+                        { id: "unavailableBadge", label: "Unavailable" },
+                      ].map(({ id, label }) => (
+                        <div
+                          key={id}
+                          className="flex items-center space-x-2 cursor-pointer"
+                          onClick={() =>
+                            toggleField(id as keyof FieldVisibility)
+                          }
+                        >
+                          <Checkbox
+                            id={id}
+                            checked={
+                              fieldVisibility[id as keyof FieldVisibility]
+                            }
+                            onCheckedChange={() =>
+                              toggleField(id as keyof FieldVisibility)
+                            }
+                          />
+                          <Label htmlFor={id} className="flex-1">
+                            {label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium leading-none mb-3">
+                      Course Information
+                    </h4>
+                    <div className="space-y-0">
+                      {[
+                        "description",
+                        "prerequisites",
+                        "instructors",
+                        "meetTimes",
+                        "insights",
+                        "categories",
+                      ].map((field) => (
+                        <div
+                          key={field}
+                          className="flex items-center space-x-2 cursor-pointer"
+                          onClick={() =>
+                            toggleField(field as keyof FieldVisibility)
+                          }
+                        >
+                          <Checkbox
+                            id={field}
+                            checked={
+                              fieldVisibility[field as keyof FieldVisibility]
+                            }
+                            onCheckedChange={() =>
+                              toggleField(field as keyof FieldVisibility)
+                            }
+                          />
+                          <Label htmlFor={field} className="capitalize flex-1">
+                            {field.replace(/([A-Z])/g, " $1").trim()}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium leading-none mb-3">
+                      Additional Details
+                    </h4>
+                    <div className="space-y-0">
+                      {["credits", "difficulty"].map((field) => (
+                        <div
+                          key={field}
+                          className="flex items-center space-x-2 cursor-pointer"
+                          onClick={() =>
+                            toggleField(field as keyof FieldVisibility)
+                          }
+                        >
+                          <Checkbox
+                            id={field}
+                            checked={
+                              fieldVisibility[field as keyof FieldVisibility]
+                            }
+                            onCheckedChange={() =>
+                              toggleField(field as keyof FieldVisibility)
+                            }
+                          />
+                          <Label htmlFor={field} className="capitalize flex-1">
+                            {field}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Button
               variant="outline"
               size="sm"
@@ -250,6 +468,7 @@ export default function Home() {
                   }
                   isExpanded={expandedCards.has(course.code)}
                   onToggleExpand={() => toggleCard(course.code)}
+                  fieldVisibility={fieldVisibility}
                 />
               </div>
             ))}
@@ -285,6 +504,7 @@ export default function Home() {
                   }
                   isExpanded={expandedCards.has(course.code)}
                   onToggleExpand={() => toggleCard(course.code)}
+                  fieldVisibility={fieldVisibility}
                 />
               </div>
             ))}
