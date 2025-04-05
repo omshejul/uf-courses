@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { useCategoryStore, useInsightStore } from "@/lib/store";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,11 +21,13 @@ import { useSession } from "next-auth/react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import type { InsightWithUser } from "@/lib/models/insight";
+import type { Category } from "@/lib/models/category";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { signIn } from "next-auth/react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCourseStore } from "@/lib/store/course-store";
 
 const dayCodeToName = (code: string): string => {
   const days: Record<string, string> = {
@@ -84,72 +85,27 @@ export function CourseCard({
   description,
   prerequisites,
   sections,
-  insights,
+  insights: defaultInsights,
   isExpanded = false,
   onToggleExpand,
 }: CourseCardProps) {
-  const {
-    categories,
-    courseCategoryMap,
-    addCourseToCategory,
-    removeCourseFromCategory,
-    fetchCourseCategories,
-  } = useCategoryStore();
-  const {
-    insights: userInsights,
-    addInsight,
-    removeInsight,
-    fetchInsights,
-  } = useInsightStore();
   const { data: session } = useSession();
   const [isAddingInsight, setIsAddingInsight] = useState(false);
   const [insightText, setInsightText] = useState("");
   const [difficulty, setDifficulty] = useState(5);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (session?.user?.id) {
-        // Batch fetch both insights and categories in parallel
-        await Promise.all([fetchInsights(code), fetchCourseCategories(code)]);
-      }
-    };
+  const {
+    courseData,
+    allCategories,
+    isLoading,
+    error,
+    addInsight,
+    removeInsight,
+    toggleCategory,
+  } = useCourseStore();
 
-    // Only fetch if we don't already have the data
-    if (
-      session?.user?.id &&
-      (!userInsights[code] || !courseCategoryMap[code])
-    ) {
-      fetchData();
-    }
-  }, [
-    code,
-    fetchInsights,
-    fetchCourseCategories,
-    session?.user?.id,
-    userInsights,
-    courseCategoryMap,
-  ]);
-
-  const courseInsights = userInsights[code] || [];
-  const courseCategories = courseCategoryMap[code] || [];
-
-  const toggleCategory = async (categoryId: string) => {
-    if (!session) {
-      signIn("google");
-      return;
-    }
-
-    try {
-      if (courseCategories.includes(categoryId)) {
-        await removeCourseFromCategory(code, categoryId);
-      } else {
-        await addCourseToCategory(code, categoryId);
-      }
-    } catch (error) {
-      console.error("Failed to toggle category:", error);
-    }
-  };
+  const courseInfo = courseData[code] || { insights: [], categories: [] };
 
   const handleSubmitInsight = async () => {
     if (!session) return;
@@ -174,11 +130,24 @@ export function CourseCard({
     }
   };
 
+  const handleToggleCategory = async (categoryId: string) => {
+    if (!session) {
+      signIn("google");
+      return;
+    }
+
+    try {
+      await toggleCategory(code, categoryId);
+    } catch (error) {
+      console.error("Failed to toggle category:", error);
+    }
+  };
+
   return (
     <Card
       className={cn(
-        "w-full relative transition-all duration-300",
-        !isExpanded && "h-[300px] overflow-hidden"
+        "relative",
+        isExpanded ? "h-auto" : "h-[300px] overflow-hidden"
       )}
     >
       <CardContent className="relative">
@@ -208,49 +177,63 @@ export function CourseCard({
                 ? `${sections[0].credits} credits`
                 : sections[0]?.credits}
             </div>
-            {insights && (
+            {defaultInsights && (
               <div
-                className="px-2 py-1 rounded text-sm font-medium"
+                className="px-2 py-1 text-sm rounded font-medium"
                 style={{
                   backgroundColor:
-                    insights.difficulty === "Easy"
+                    defaultInsights.difficulty === "Easy"
                       ? "rgb(34 197 94 / 0.1)"
-                      : insights.difficulty === "Easy-Moderate"
+                      : defaultInsights.difficulty === "Easy-Moderate"
                       ? "rgb(34 197 94 / 0.2)"
-                      : insights.difficulty === "Moderate"
+                      : defaultInsights.difficulty === "Moderate"
                       ? "rgb(234 179 8 / 0.1)"
-                      : insights.difficulty === "Moderate-Hard"
+                      : defaultInsights.difficulty === "Moderate-Hard"
                       ? "rgb(234 179 8 / 0.2)"
-                      : insights.difficulty === "Hard"
+                      : defaultInsights.difficulty === "Hard"
                       ? "rgb(239 68 68 / 0.1)"
                       : "rgb(148 163 184 / 0.1)",
                   color:
-                    insights.difficulty === "Easy" ||
-                    insights.difficulty === "Easy-Moderate"
+                    defaultInsights.difficulty === "Easy" ||
+                    defaultInsights.difficulty === "Easy-Moderate"
                       ? "rgb(34 197 94)"
-                      : insights.difficulty === "Moderate" ||
-                        insights.difficulty === "Moderate-Hard"
+                      : defaultInsights.difficulty === "Moderate" ||
+                        defaultInsights.difficulty === "Moderate-Hard"
                       ? "rgb(234 179 8)"
-                      : insights.difficulty === "Hard"
+                      : defaultInsights.difficulty === "Hard"
                       ? "rgb(239 68 68)"
                       : "rgb(148 163 184)",
                 }}
               >
-                {insights.difficulty}
+                {defaultInsights.difficulty}
               </div>
             )}
           </div>
         </div>
 
-        {insights?.track && (
+        {defaultInsights?.track && (
           <div className="text-sm my-2 font-medium text-blue-500 bg-blue-50 dark:bg-blue-950 dark:text-blue-400 px-2 py-1 rounded inline-block">
-            {insights.track}
+            {defaultInsights.track}
           </div>
         )}
 
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           {description}
         </p>
+
+        {/* Show loading state */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        )}
+
+        {/* Show error state */}
+        {error && (
+          <div className="p-4 text-sm text-red-500">
+            Error loading course data: {error}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -321,13 +304,13 @@ export function CourseCard({
           </div>
 
           {/* Static Insight */}
-          {insights && (
+          {defaultInsights && (
             <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border-2 border-primary/10">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm mb-1">{insights.insight}</p>
+                  <p className="text-sm mb-1">{defaultInsights.insight}</p>
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
-                    <span>Difficulty: {insights.difficulty}</span>
+                    <span>Difficulty: {defaultInsights.difficulty}</span>
                     <span>•</span>
                     <span>Provided by a Senior</span>
                     <span>•</span>
@@ -339,9 +322,9 @@ export function CourseCard({
           )}
 
           {/* User Insights */}
-          {courseInsights.length > 0 ? (
+          {courseInfo.insights.length > 0 ? (
             <div className="space-y-3">
-              {courseInsights.map((insight: InsightWithUser) => {
+              {courseInfo.insights.map((insight: InsightWithUser) => {
                 const insightId = insight._id?.toString();
                 return (
                   <div
@@ -373,7 +356,7 @@ export function CourseCard({
               })}
             </div>
           ) : (
-            !insights && (
+            !defaultInsights && (
               <p className="text-center text-gray-500 py-4">
                 No insights yet. Be the first to share!
               </p>
@@ -491,20 +474,24 @@ export function CourseCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              {categories.map((category) => (
+              {allCategories.map((category: Category) => (
                 <DropdownMenuItem
                   key={category._id?.toString()}
-                  onClick={() => toggleCategory(category._id?.toString() || "")}
+                  onClick={() =>
+                    handleToggleCategory(category._id?.toString() || "")
+                  }
                 >
                   <span className="mr-2">
-                    {courseCategories.includes(category._id?.toString() || "")
+                    {courseInfo.categories.includes(
+                      category._id?.toString() || ""
+                    )
                       ? "✓"
                       : ""}
                   </span>
                   {category.name}
                 </DropdownMenuItem>
               ))}
-              {categories.length === 0 && (
+              {allCategories.length === 0 && (
                 <DropdownMenuItem disabled>
                   Create a category first
                 </DropdownMenuItem>

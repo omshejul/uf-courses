@@ -1,6 +1,13 @@
-export const coursesData = [
-  {
-    COURSES: [
+import type { Course, CourseInsight } from "./types";
+
+interface CourseDataItem {
+  COURSES: Course[];
+  LASTCONTROLNUMBER: number;
+  RETRIEVEDROWS: number;
+  TOTALROWS: number;
+}
+
+export const coursesData: CourseDataItem[] = [
   {
     COURSES: [
       {
@@ -1730,13 +1737,9 @@ export const coursesData = [
     RETRIEVEDROWS: 22,
     TOTALROWS: 22,
   },
-]
-  }
-];
+] as CourseDataItem[];
 
-export const ECE_COURSES = [
-  {
-    COURSES: [
+export const ECE_COURSES: CourseDataItem[] = [
   {
     COURSES: [
       {
@@ -7398,11 +7401,9 @@ export const ECE_COURSES = [
     RETRIEVEDROWS: 42,
     TOTALROWS: 42,
   },
-]
-  }
-];
+] as CourseDataItem[];
 
-export const COURSE_INSIGHTS = {
+export const COURSE_INSIGHTS: Record<string, CourseInsight> = {
   COT5615: {
     insight:
       "Part of the ML track (MIS → ML → AML). More theoretical ML with heavy focus on math and statistics. Prof. Banerjee is known for being approachable and fair with grading.",
@@ -7469,4 +7470,4 @@ export const COURSE_INSIGHTS = {
       "Special topics courses are generally not recommended unless necessary. Usually easier but may have limited learning scope.",
     difficulty: "Varies",
   },
-} as const; 
+} as Record<string, CourseInsight>; 
