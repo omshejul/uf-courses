@@ -20,6 +20,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FiTrash2 } from "react-icons/fi";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const DEFAULT_CATEGORIES = {
   ALL: ["*"],
@@ -67,6 +77,7 @@ export function CourseFilters({
     useCategoryStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -103,6 +114,7 @@ export function CourseFilters({
       if (selectedCategory === categoryId) {
         onCategoryChange("ALL");
       }
+      setCategoryToDelete(null);
     } catch (error) {
       console.error("Failed to remove category:", error);
     }
@@ -198,43 +210,50 @@ export function CourseFilters({
             Create Category
           </Button>
 
-          <div className="flex gap-1.5 sm:gap-2 flex-wrap">
-            {/* Default Categories */}
-            {Object.entries(DEFAULT_CATEGORIES).map(([key]) => (
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(DEFAULT_CATEGORIES).map((category) => (
               <Button
-                key={key}
-                variant={selectedCategory === key ? "secondary" : "ghost"}
+                key={category}
+                variant={selectedCategory === category ? "secondary" : "ghost"}
                 size="sm"
-                className="text-sm px-2 py-0 h-8"
-                onClick={() => onCategoryChange(key)}
+                onClick={() => onCategoryChange(category)}
               >
-                {key.replace(/_/g, " ")}
+                {category.replace(/_/g, " ")}
               </Button>
             ))}
 
-            {/* Custom Categories */}
-            {categories.map((category) => (
-              <div
-                key={category._id?.toString()}
-                className={`text-sm px-2 pl-3 py-0 h-8 flex items-center gap-1 rounded-lg cursor-pointer ${
-                  selectedCategory === category._id?.toString()
-                    ? "bg-secondary text-secondary-foreground"
-                    : "bg-ghost text-ghost-foreground"
-                }`}
-                onClick={() => onCategoryChange(category._id?.toString() || "")}
-              >
-                {category.name}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveCategory(category._id?.toString() || "");
-                  }}
-                  className="ml-1 bg-red-500/20 text-xs opacity-50 hover:opacity-100 rounded-full p-1"
+            {categories.map((category) => {
+              const categoryId = category._id?.toString() || "";
+              return (
+                <div
+                  key={categoryId}
+                  className="relative group flex items-center"
                 >
-                  <FiTrash2 className="text-red-500" />
-                </button>
-              </div>
-            ))}
+                  <Button
+                    variant={
+                      selectedCategory === categoryId ? "secondary" : "ghost"
+                    }
+                    size="sm"
+                    onClick={() => onCategoryChange(categoryId)}
+                    className="pr-8"
+                  >
+                    {category.name}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 opacity-50 group-hover:opacity-100 h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCategoryToDelete(categoryId);
+                    }}
+                  >
+                    <FiTrash2 className="h-4 w-4 text-red-500" />
+                    <span className="sr-only">Delete category</span>
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -264,6 +283,32 @@ export function CourseFilters({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!categoryToDelete}
+        onOpenChange={(open: boolean) => !open && setCategoryToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this category? This action cannot
+              be undone. The category will be removed from all courses.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                categoryToDelete && handleRemoveCategory(categoryToDelete)
+              }
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
