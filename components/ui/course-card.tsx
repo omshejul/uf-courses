@@ -28,6 +28,7 @@ import { signIn } from "next-auth/react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCourseStore } from "@/lib/store/course-store";
+import { FiLoader } from "react-icons/fi";
 
 const dayCodeToName = (code: string): string => {
   const days: Record<string, string> = {
@@ -223,8 +224,8 @@ export function CourseCard({
 
         {/* Show loading state */}
         {isLoading && (
-          <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="absolute inset-0 bg-background/50 flex top-[150px] justify-center z-10">
+            <FiLoader className="w-4 h-4 animate-spin text-primary" />
           </div>
         )}
 

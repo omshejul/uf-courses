@@ -12,6 +12,7 @@ import Cookies from "js-cookie";
 import { useCourseStore } from "@/lib/store/course-store";
 import { coursesData, ECE_COURSES, COURSE_INSIGHTS } from "../lib/data";
 import type { Course } from "@/lib/types";
+import { FiLoader } from "react-icons/fi";
 
 // Course categories mapping
 const COURSE_CATEGORIES = {
@@ -39,6 +40,7 @@ export default function Home() {
     "CS"
   );
   const fetchAllData = useCourseStore((state) => state.fetchAllData);
+  const isLoading = useCourseStore((state) => state.isLoading);
 
   // Handle cookie after mount to avoid hydration mismatch
   useEffect(() => {
@@ -159,7 +161,13 @@ export default function Home() {
         selectedDepartment={selectedDepartment}
       />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-background/50 flex top-[150px] justify-center z-10">
+            <FiLoader className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-4">
           <div className="text-sm text-muted-foreground">
             Found {filteredCourses.length} courses
