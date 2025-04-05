@@ -289,7 +289,7 @@ export default function Home() {
                       {["code", "acronym", "name"].map((field) => (
                         <div
                           key={field}
-                          className="flex items-center space-x-2 cursor-pointer"
+                          className="flex items-center space-x-2 p-3 hover:bg-muted rounded-md cursor-pointer transition-colors"
                           onClick={() =>
                             toggleField(field as keyof FieldVisibility)
                           }
@@ -299,11 +299,12 @@ export default function Home() {
                             checked={
                               fieldVisibility[field as keyof FieldVisibility]
                             }
-                            onCheckedChange={() =>
-                              toggleField(field as keyof FieldVisibility)
-                            }
+                            className="pointer-events-none"
                           />
-                          <Label htmlFor={field} className="capitalize flex-1">
+                          <Label
+                            htmlFor={field}
+                            className="capitalize flex-1 pointer-events-none"
+                          >
                             {field}
                           </Label>
                         </div>
@@ -323,7 +324,7 @@ export default function Home() {
                       ].map(({ id, label }) => (
                         <div
                           key={id}
-                          className="flex items-center space-x-2 cursor-pointer"
+                          className="flex items-center space-x-2 p-3 hover:bg-muted rounded-md cursor-pointer transition-colors"
                           onClick={() =>
                             toggleField(id as keyof FieldVisibility)
                           }
@@ -333,11 +334,12 @@ export default function Home() {
                             checked={
                               fieldVisibility[id as keyof FieldVisibility]
                             }
-                            onCheckedChange={() =>
-                              toggleField(id as keyof FieldVisibility)
-                            }
+                            className="pointer-events-none"
                           />
-                          <Label htmlFor={id} className="flex-1">
+                          <Label
+                            htmlFor={id}
+                            className="flex-1 pointer-events-none"
+                          >
                             {label}
                           </Label>
                         </div>
@@ -360,7 +362,7 @@ export default function Home() {
                       ].map((field) => (
                         <div
                           key={field}
-                          className="flex items-center space-x-2 cursor-pointer"
+                          className="flex items-center space-x-2 p-3 hover:bg-muted rounded-md cursor-pointer transition-colors"
                           onClick={() =>
                             toggleField(field as keyof FieldVisibility)
                           }
@@ -370,11 +372,12 @@ export default function Home() {
                             checked={
                               fieldVisibility[field as keyof FieldVisibility]
                             }
-                            onCheckedChange={() =>
-                              toggleField(field as keyof FieldVisibility)
-                            }
+                            className="pointer-events-none"
                           />
-                          <Label htmlFor={field} className="capitalize flex-1">
+                          <Label
+                            htmlFor={field}
+                            className="capitalize flex-1 pointer-events-none"
+                          >
                             {field.replace(/([A-Z])/g, " $1").trim()}
                           </Label>
                         </div>
@@ -390,7 +393,7 @@ export default function Home() {
                       {["credits", "difficulty"].map((field) => (
                         <div
                           key={field}
-                          className="flex items-center space-x-2 cursor-pointer"
+                          className="flex items-center space-x-2 p-3 hover:bg-muted rounded-md cursor-pointer transition-colors"
                           onClick={() =>
                             toggleField(field as keyof FieldVisibility)
                           }
@@ -400,11 +403,12 @@ export default function Home() {
                             checked={
                               fieldVisibility[field as keyof FieldVisibility]
                             }
-                            onCheckedChange={() =>
-                              toggleField(field as keyof FieldVisibility)
-                            }
+                            className="pointer-events-none"
                           />
-                          <Label htmlFor={field} className="capitalize flex-1">
+                          <Label
+                            htmlFor={field}
+                            className="capitalize flex-1 pointer-events-none"
+                          >
                             {field}
                           </Label>
                         </div>
