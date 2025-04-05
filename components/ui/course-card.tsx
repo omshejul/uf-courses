@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { signIn } from "next-auth/react";
 import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getColorForString } from "@/lib/utils";
 import { useCourseStore } from "@/lib/store/course-store";
 
 const dayCodeToName = (code: string): string => {
@@ -178,7 +178,7 @@ export function CourseCard({
     >
       <CardContent className="relative">
         <div className="flex justify-between items-start">
-          <div>
+          <div className="flex flex-col">
             <h2
               className="text-2xl font-bold"
               data-course-acronym={generateAcronym(name)}
@@ -195,7 +195,7 @@ export function CourseCard({
                 )}
               </span>
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-xl text-muted-foreground">{name}</h3>
               {CS_CORE_COURSES.has(code) && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full">
@@ -207,10 +207,27 @@ export function CourseCard({
                   Unavailable
                 </span>
               )}
+              {courseInfo.categories.map((categoryId) => {
+                const category = allCategories.find(
+                  (c) => c._id?.toString() === categoryId
+                );
+                if (!category) return null;
+                return (
+                  <span
+                    key={categoryId}
+                    className={cn(
+                      "px-2 py-0.5 text-xs font-medium rounded-full",
+                      getColorForString(category.name)
+                    )}
+                  >
+                    {category.name}
+                  </span>
+                );
+              })}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <div className="text-sm font-medium">
+            <div className="text-sm min-w-16 text-right font-medium">
               {typeof sections[0]?.credits === "number"
                 ? `${sections[0].credits} credits`
                 : sections[0]?.credits}
