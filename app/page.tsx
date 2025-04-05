@@ -16,6 +16,7 @@ import Cookies from "js-cookie";
 import { useCourseStore } from "@/lib/store/course-store";
 import { coursesData, ECE_COURSES, COURSE_INSIGHTS } from "../lib/data";
 import type { Course } from "@/lib/types";
+import { useSession } from "next-auth/react";
 
 // Course categories mapping
 const COURSE_CATEGORIES = {
@@ -58,6 +59,8 @@ export default function Home() {
   );
   const fetchAllData = useCourseStore((state) => state.fetchAllData);
   const courseStore = useCourseStore();
+  const { data: session } = useSession();
+  const error = useCourseStore((state) => state.error);
 
   // Handle cookie after mount to avoid hydration mismatch
   useEffect(() => {
@@ -188,6 +191,9 @@ export default function Home() {
         <div className="flex justify-between items-center mb-4">
           <div className="text-sm text-muted-foreground">
             Found {filteredCourses.length} courses
+            {error && session && (
+              <span className="ml-2 text-red-500">Error: {error}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button

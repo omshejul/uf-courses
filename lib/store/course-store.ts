@@ -32,14 +32,37 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      // Get categories first
+      // Get categories first - only if user is logged in
       const catResponse = await fetch('/api/categories');
-      if (!catResponse.ok) throw new Error('Failed to fetch categories');
-      const categories = await catResponse.json();
-      set({ allCategories: categories });
+      if (catResponse.status === 401) {
+        // User is not logged in - this is expected, don't show error
+        set({ allCategories: [] });
+      } else if (!catResponse.ok) {
+        throw new Error('Failed to fetch categories');
+      } else {
+        const categories = await catResponse.json();
+        set({ allCategories: categories });
+      }
 
       // Then get course data
       const response = await fetch(`/api/batch?courseCodes=${courseCodes.join(",")}`);
+      if (response.status === 401) {
+        // User is not logged in - set empty data
+        set(state => ({
+          courseData: {
+            ...state.courseData,
+            ...Object.fromEntries(
+              courseCodes.map(code => [code, {
+                insights: [],
+                categories: [],
+              }])
+            )
+          },
+          isLoading: false,
+        }));
+        return;
+      }
+      
       if (!response.ok) throw new Error('Failed to fetch course data');
       const data = await response.json();
 
@@ -57,10 +80,15 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
         isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'An error occurred',
-        isLoading: false,
-      });
+      // Only set error if it's not an auth error
+      if (error instanceof Error && !error.message.includes('401')) {
+        set({
+          error: error.message,
+          isLoading: false,
+        });
+      } else {
+        set({ isLoading: false });
+      }
     }
   },
 
