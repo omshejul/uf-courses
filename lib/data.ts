@@ -7454,6 +7454,11 @@ export const COURSE_INSIGHTS: Record<string, CourseInsight> = {
       "Taught by Prof. Sahni, a legendary UF professor. Well-structured course with potential for good grades with consistent effort.",
     difficulty: "Moderate",
   },
+  COT5405: {
+    insight:
+      "Prof. Alin Dobra: Excellent teacher, strict, focuses heavily on problem-solving and conceptual understanding",
+    difficulty: "Easy-Moderate",
+  },
   CNT5106C: {
     insight:
       "Theoretical approach similar to undergraduate CN with some advanced projects added. Requires moderate effort.",

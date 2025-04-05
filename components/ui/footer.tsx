@@ -1,6 +1,6 @@
 // TODO: Update to GitHub when the new version of lucide-react is released
-import { GitHubLogoIcon } from "@radix-ui/react-icons";
-import { Button } from "./button";
+import { FiGithub } from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
 import pkg from "../../package.json";
 
 export function Footer() {
@@ -15,18 +15,25 @@ export function Footer() {
               of Florida • v{pkg.version}
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" className="w-full" size="icon" asChild>
-              <a
-                href="https://github.com/omshejul/uf-courses"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center px-3 gap-2"
-              >
-                <GitHubLogoIcon className="h-5 w-5" />
-                <span>OpenSourced</span>
-              </a>
-            </Button>
+
+          <div className="flex flex-warp items-center gap-4">
+            <a
+              href="https://wa.me/+917775977750"
+              className="flex items-center px-3 py-2 gap-2 text-muted-foreground hover:text-primary rounded-lg"
+            >
+              <FaWhatsapp className="h-4 w-4" />
+              <span className="text-sm text-">Whatsapp Me</span>
+            </a>
+
+            <a
+              href="https://github.com/omshejul/uf-courses"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center px-3 py-2 gap-2 text-muted-foreground hover:text-primary rounded-lg"
+            >
+              <FiGithub className="h-4 w-4" />
+              <span className="text-sm">OpenSourced</span>
+            </a>
           </div>
         </div>
       </div>
