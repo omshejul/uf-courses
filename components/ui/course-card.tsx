@@ -24,6 +24,9 @@ import { Slider } from "@/components/ui/slider";
 import type { InsightWithUser } from "@/lib/models/insight";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { signIn } from "next-auth/react";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const dayCodeToName = (code: string): string => {
   const days: Record<string, string> = {
@@ -71,6 +74,8 @@ interface CourseCardProps {
     difficulty: string;
     track?: string;
   };
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export function CourseCard({
@@ -80,15 +85,22 @@ export function CourseCard({
   prerequisites,
   sections,
   insights,
+  isExpanded = false,
+  onToggleExpand,
 }: CourseCardProps) {
-  const { categories } = useCategoryStore();
+  const {
+    categories,
+    courseCategoryMap,
+    addCourseToCategory,
+    removeCourseFromCategory,
+    fetchCourseCategories,
+  } = useCategoryStore();
   const {
     insights: userInsights,
     addInsight,
     removeInsight,
     fetchInsights,
   } = useInsightStore();
-  const [courseCategories, setCourseCategories] = useState<string[]>([]);
   const { data: session } = useSession();
   const [isAddingInsight, setIsAddingInsight] = useState(false);
   const [insightText, setInsightText] = useState("");
@@ -96,32 +108,47 @@ export function CourseCard({
   const [isAnonymous, setIsAnonymous] = useState(false);
 
   useEffect(() => {
-    fetchInsights(code);
-    const storedCourseCategories = localStorage.getItem(
-      `course_categories_${code}`
-    );
-    if (storedCourseCategories) {
-      try {
-        setCourseCategories(JSON.parse(storedCourseCategories));
-      } catch (e) {
-        console.error("Failed to parse course categories:", e);
-        setCourseCategories([]);
+    const fetchData = async () => {
+      if (session?.user?.id) {
+        // Batch fetch both insights and categories in parallel
+        await Promise.all([fetchInsights(code), fetchCourseCategories(code)]);
       }
+    };
+
+    // Only fetch if we don't already have the data
+    if (
+      session?.user?.id &&
+      (!userInsights[code] || !courseCategoryMap[code])
+    ) {
+      fetchData();
     }
-  }, [code, fetchInsights]);
+  }, [
+    code,
+    fetchInsights,
+    fetchCourseCategories,
+    session?.user?.id,
+    userInsights,
+    courseCategoryMap,
+  ]);
 
   const courseInsights = userInsights[code] || [];
+  const courseCategories = courseCategoryMap[code] || [];
 
-  const toggleCategory = (categoryName: string) => {
-    const newCategories = courseCategories.includes(categoryName)
-      ? courseCategories.filter((c) => c !== categoryName)
-      : [...courseCategories, categoryName];
+  const toggleCategory = async (categoryId: string) => {
+    if (!session) {
+      signIn("google");
+      return;
+    }
 
-    localStorage.setItem(
-      `course_categories_${code}`,
-      JSON.stringify(newCategories)
-    );
-    setCourseCategories(newCategories);
+    try {
+      if (courseCategories.includes(categoryId)) {
+        await removeCourseFromCategory(code, categoryId);
+      } else {
+        await addCourseToCategory(code, categoryId);
+      }
+    } catch (error) {
+      console.error("Failed to toggle category:", error);
+    }
   };
 
   const handleSubmitInsight = async () => {
@@ -148,8 +175,13 @@ export function CourseCard({
   };
 
   return (
-    <Card className="w-full">
-      <CardContent>
+    <Card
+      className={cn(
+        "w-full relative transition-all duration-300",
+        !isExpanded && "h-[300px] overflow-hidden"
+      )}
+    >
+      <CardContent className="relative">
         <div className="flex justify-between items-start">
           <div>
             <h2
@@ -223,11 +255,21 @@ export function CourseCard({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Course Insights</h3>
-            {session && (
-              <Dialog open={isAddingInsight} onOpenChange={setIsAddingInsight}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">Add Insight</Button>
-                </DialogTrigger>
+            <Dialog open={isAddingInsight} onOpenChange={setIsAddingInsight}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (!session) {
+                      signIn("google");
+                      return;
+                    }
+                  }}
+                >
+                  Add Insight
+                </Button>
+              </DialogTrigger>
+              {session && (
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>
@@ -274,8 +316,8 @@ export function CourseCard({
                     </div>
                   </div>
                 </DialogContent>
-              </Dialog>
-            )}
+              )}
+            </Dialog>
           </div>
 
           {/* Static Insight */}
@@ -351,50 +393,110 @@ export function CourseCard({
         )}
 
         <div className="space-y-2">
-          {sections.map((section, idx) => (
-            <div key={idx} className="text-sm space-y-1 border-t mt-2 pt-2">
-              <div className="font-semibold">
-                Instructor: {section.instructors.map((i) => i.name).join(", ")}
-              </div>
-              {section.meetTimes.map((time, timeIdx) => (
-                <div key={timeIdx} className="flex items-center gap-2">
-                  <span className="font-medium">
-                    {time.meetDays.map((day) => dayCodeToName(day)).join(", ")}
-                  </span>
-                  <span>
-                    {time.meetTimeBegin} - {time.meetTimeEnd}
-                  </span>
-                  {time.meetBuilding && (
-                    <span>
-                      {time.meetBuilding} {time.meetRoom}
-                    </span>
+          {(() => {
+            // Group sections by instructor
+            const instructorSections = new Map<
+              string,
+              {
+                meetTimes: Map<
+                  string,
+                  {
+                    meetDays: string[];
+                    meetTimeBegin: string;
+                    meetTimeEnd: string;
+                    meetBuilding: string;
+                    meetRoom: string | number;
+                  }
+                >;
+                finalExam?: string;
+              }
+            >();
+
+            sections.forEach((section) => {
+              const instructorName =
+                section.instructors.length > 0
+                  ? section.instructors.map((i) => i.name).join(", ")
+                  : "Staff";
+
+              if (!instructorSections.has(instructorName)) {
+                instructorSections.set(instructorName, {
+                  meetTimes: new Map(),
+                  finalExam: section.finalExam,
+                });
+              }
+
+              // Add unique meeting times
+              section.meetTimes.forEach((time) => {
+                const timeKey = `${time.meetDays.join("")}-${
+                  time.meetTimeBegin
+                }-${time.meetTimeEnd}-${time.meetBuilding}-${time.meetRoom}`;
+                instructorSections
+                  .get(instructorName)!
+                  .meetTimes.set(timeKey, time);
+              });
+            });
+
+            return Array.from(instructorSections.entries()).map(
+              ([instructorName, data], idx) => (
+                <div
+                  key={`${instructorName}-${idx}`}
+                  className="text-sm space-y-1 border-t mt-2 pt-2"
+                >
+                  <div className="font-semibold">
+                    Instructor: {instructorName}
+                  </div>
+                  {Array.from(data.meetTimes.values()).map((time, timeIdx) => (
+                    <div
+                      key={`${time.meetDays.join("")}-${
+                        time.meetTimeBegin
+                      }-${timeIdx}`}
+                      className="flex items-center gap-2"
+                    >
+                      <span className="font-medium">
+                        {time.meetDays
+                          .map((day: string) => dayCodeToName(day))
+                          .join(", ")}
+                      </span>
+                      <span>
+                        {time.meetTimeBegin} - {time.meetTimeEnd}
+                      </span>
+                      {time.meetBuilding && (
+                        <span>
+                          {time.meetBuilding} {time.meetRoom}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {data.finalExam && (
+                    <div className="text-muted-foreground">
+                      Final Exam: {data.finalExam}
+                    </div>
                   )}
                 </div>
-              ))}
-              {section.finalExam && (
-                <div className="text-muted-foreground">
-                  Final Exam: {section.finalExam}
-                </div>
-              )}
-            </div>
-          ))}
+              )
+            );
+          })()}
         </div>
 
         <div className="flex gap-2 pt-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm">Add to Category</Button>
+              <Button size="sm" onClick={() => !session && signIn("google")}>
+                Add to Category
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {categories.map((category) => (
                 <DropdownMenuItem
-                  key={category}
-                  onClick={() => toggleCategory(category)}
+                  key={category._id?.toString()}
+                  onClick={() => toggleCategory(category._id?.toString() || "")}
                 >
                   <span className="mr-2">
-                    {courseCategories.includes(category) ? "✓" : ""}
+                    {courseCategories.includes(category._id?.toString() || "")
+                      ? "✓"
+                      : ""}
                   </span>
-                  {category}
+                  {category.name}
                 </DropdownMenuItem>
               ))}
               {categories.length === 0 && (
@@ -405,7 +507,29 @@ export function CourseCard({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {!isExpanded && (
+          <>
+            <div className="absolute top-[190px] left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+            {/* <div className="absolute bottom-0 left-0 right-0 h-12 backdrop-blur-sm bg-background/50" /> */}
+          </>
+        )}
       </CardContent>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onToggleExpand}
+        className={cn(
+          "absolute z-10 bg-gradient-radial from-black to-transparent bottom-0 left-0 right-0 w-full rounded-lg  h-12 flex items-center justify-center transition duration-500 ",
+          isExpanded && "rotate-180"
+        )}
+      >
+        <ChevronDown className="h-4 w-4" />
+        <span className="sr-only">
+          {isExpanded ? "Show less" : "Show more"}
+        </span>
+      </Button>
     </Card>
   );
 }
