@@ -210,7 +210,7 @@ export function CourseFilters({
             Create Category
           </Button>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 justify-evenly sm:justify-start">
             {Object.keys(DEFAULT_CATEGORIES).map((category) => (
               <Button
                 key={category}
