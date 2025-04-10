@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -121,6 +121,30 @@ export const CS_UNAVAILABLE_COURSES = new Set([
   "EGN6913",
 ]);
 
+interface RMPRatings {
+  overall: number;
+  difficulty: number;
+  wouldTakeAgain: number;
+  totalRatings: number;
+}
+
+interface RMPProfessor {
+  name: string;
+  link: string;
+  department: string;
+  ratings: RMPRatings;
+}
+
+interface RMPSchool {
+  name: string;
+  id: string;
+}
+
+interface RMPResponse {
+  school: RMPSchool;
+  professor: RMPProfessor;
+}
+
 export function CourseCard({
   code,
   name,
@@ -137,6 +161,118 @@ export function CourseCard({
   const [insightText, setInsightText] = useState("");
   const [difficulty, setDifficulty] = useState(5);
   const [isAnonymous, setIsAnonymous] = useState(false);
+
+  // Initialize ratings from localStorage if available
+  const [professorRatings, setProfessorRatings] = useState<
+    Record<string, RMPResponse>
+  >(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("professorRatings");
+        return cached ? JSON.parse(cached) : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  });
+
+  const [loadingRatings, setLoadingRatings] = useState<Record<string, boolean>>(
+    {}
+  );
+  const fetchedProfessors = useRef<Set<string>>(new Set());
+  const isMounted = useRef(false);
+
+  // Update localStorage when ratings change, but only after initial mount
+  useEffect(() => {
+    if (isMounted.current && Object.keys(professorRatings).length > 0) {
+      try {
+        localStorage.setItem(
+          "professorRatings",
+          JSON.stringify(professorRatings)
+        );
+      } catch (error) {
+        console.error("Error saving to localStorage:", error);
+      }
+    }
+  }, [professorRatings]);
+
+  // Set isMounted on initial mount
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const fetchProfessorRating = async (professorName: string) => {
+    // Skip if any of these conditions are true
+    if (
+      !professorName ||
+      professorName === "Staff" ||
+      loadingRatings[professorName] ||
+      professorRatings[professorName] || // Check existing ratings
+      fetchedProfessors.current.has(professorName) || // Check in-memory cache
+      !isMounted.current // Skip if component is unmounting
+    )
+      return;
+
+    // Mark as fetching before the request
+    setLoadingRatings((prev) => ({ ...prev, [professorName]: true }));
+    fetchedProfessors.current.add(professorName);
+
+    try {
+      const response = await fetch(
+        `/api/rmp?school=${encodeURIComponent(
+          "University of Florida"
+        )}&professor=${encodeURIComponent(professorName)}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch rating");
+      const data = await response.json();
+
+      // Only update state if component is still mounted
+      if (isMounted.current) {
+        setProfessorRatings((prev) => ({
+          ...prev,
+          [professorName]: data,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching professor rating:", error);
+      // Remove from cache on error to allow retry
+      fetchedProfessors.current.delete(professorName);
+    } finally {
+      if (isMounted.current) {
+        setLoadingRatings((prev) => ({ ...prev, [professorName]: false }));
+      }
+    }
+  };
+
+  // Fetch ratings only once on initial mount or when sections change
+  useEffect(() => {
+    if (!isMounted.current) return;
+
+    const uniqueProfessors = new Set<string>();
+    sections.forEach((section) => {
+      section.instructors.forEach((instructor) => {
+        const name = instructor.name;
+        if (
+          name &&
+          name !== "Staff" &&
+          !professorRatings[name] && // Check if already in state
+          !fetchedProfessors.current.has(name) && // Check if already fetching
+          !loadingRatings[name] // Check if currently loading
+        ) {
+          uniqueProfessors.add(name);
+        }
+      });
+    });
+
+    // Fetch ratings for new professors only
+    uniqueProfessors.forEach((professorName) => {
+      fetchProfessorRating(professorName);
+    });
+  }, []); // Remove professorRatings dependency
 
   const {
     courseData,
@@ -501,8 +637,97 @@ export function CourseCard({
                     className="text-sm space-y-1 border-t mt-2 pt-2"
                   >
                     {fieldVisibility.instructors && (
-                      <div className="font-semibold">
-                        Instructor: {instructorName}
+                      <div className="font-semibold flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span>Instructor: {instructorName}</span>
+                          {instructorName !== "Staff" &&
+                            loadingRatings[instructorName] && (
+                              <span className="text-xs text-gray-500">
+                                Loading rating...
+                              </span>
+                            )}
+                        </div>
+                        {professorRatings[instructorName]?.professor && (
+                          <div className="text-sm font-normal bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-primary/10 p-2 space-y-1">
+                            <div className="flex items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  Rating:
+                                </span>
+                                <span
+                                  className={cn(
+                                    "font-medium",
+                                    professorRatings[instructorName].professor
+                                      .ratings.overall >= 4
+                                      ? "text-green-600 dark:text-green-400"
+                                      : professorRatings[instructorName]
+                                          .professor.ratings.overall >= 3
+                                      ? "text-yellow-600 dark:text-yellow-400"
+                                      : "text-red-600 dark:text-red-400"
+                                  )}
+                                >
+                                  {
+                                    professorRatings[instructorName].professor
+                                      .ratings.overall
+                                  }
+                                  /5
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  Difficulty:
+                                </span>
+                                <span className="font-medium">
+                                  {
+                                    professorRatings[instructorName].professor
+                                      .ratings.difficulty
+                                  }
+                                  /5
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  Would take again:
+                                </span>
+                                <span className="font-medium">
+                                  {Math.round(
+                                    professorRatings[instructorName].professor
+                                      .ratings.wouldTakeAgain
+                                  )}
+                                  %
+                                </span>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                              <span>
+                                {
+                                  professorRatings[instructorName].professor
+                                    .department
+                                }
+                              </span>
+                              <span>•</span>
+                              <span>
+                                {
+                                  professorRatings[instructorName].professor
+                                    .ratings.totalRatings
+                                }{" "}
+                                ratings
+                              </span>
+                              <span>•</span>
+                              <a
+                                href={
+                                  professorRatings[instructorName].professor
+                                    .link
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:underline"
+                              >
+                                View on RMP
+                              </a>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     {fieldVisibility.meetTimes &&
