@@ -28,6 +28,7 @@ import { signIn } from "next-auth/react";
 import { ChevronDown } from "lucide-react";
 import { cn, getColorForString } from "@/lib/utils";
 import { useCourseStore } from "@/lib/store/course-store";
+import { motion, AnimatePresence } from "framer-motion";
 
 const dayCodeToName = (code: string): string => {
   const days: Record<string, string> = {
@@ -638,96 +639,133 @@ export function CourseCard({
                   >
                     {fieldVisibility.instructors && (
                       <div className="font-semibold flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span>Instructor: {instructorName}</span>
-                          {instructorName !== "Staff" &&
-                            loadingRatings[instructorName] && (
-                              <span className="text-xs text-gray-500">
-                                Loading rating...
-                              </span>
-                            )}
-                        </div>
-                        {professorRatings[instructorName]?.professor && (
-                          <div className="text-sm font-normal bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-primary/10 p-2 space-y-1">
-                            <div className="flex items-center gap-4">
-                              <span className="flex items-center gap-1">
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  Rating:
-                                </span>
-                                <span
-                                  className={cn(
-                                    "font-medium",
-                                    professorRatings[instructorName].professor
-                                      .ratings.overall >= 4
-                                      ? "text-green-600 dark:text-green-400"
-                                      : professorRatings[instructorName]
-                                          .professor.ratings.overall >= 3
-                                      ? "text-yellow-600 dark:text-yellow-400"
-                                      : "text-red-600 dark:text-red-400"
-                                  )}
+                        <div
+                          className={cn(
+                            "group relative",
+                            isExpanded ? "cursor-default" : "cursor-pointer"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>Instructor: {instructorName}</span>
+                            {instructorName !== "Staff" &&
+                              loadingRatings[instructorName] && (
+                                <motion.span
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  className="text-xs text-gray-500"
                                 >
-                                  {
-                                    professorRatings[instructorName].professor
-                                      .ratings.overall
-                                  }
-                                  /5
-                                </span>
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  Difficulty:
-                                </span>
-                                <span className="font-medium">
-                                  {
-                                    professorRatings[instructorName].professor
-                                      .ratings.difficulty
-                                  }
-                                  /5
-                                </span>
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  Would take again:
-                                </span>
-                                <span className="font-medium">
-                                  {Math.round(
-                                    professorRatings[instructorName].professor
-                                      .ratings.wouldTakeAgain
-                                  )}
-                                  %
-                                </span>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                              <span>
-                                {
-                                  professorRatings[instructorName].professor
-                                    .department
-                                }
-                              </span>
-                              <span>•</span>
-                              <span>
-                                {
-                                  professorRatings[instructorName].professor
-                                    .ratings.totalRatings
-                                }{" "}
-                                ratings
-                              </span>
-                              <span>•</span>
-                              <a
-                                href={
-                                  professorRatings[instructorName].professor
-                                    .link
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:underline"
-                              >
-                                View on RMP
-                              </a>
-                            </div>
+                                  Loading rating...
+                                </motion.span>
+                              )}
                           </div>
-                        )}
+                          <AnimatePresence>
+                            {professorRatings[instructorName]?.professor && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 500,
+                                  damping: 30,
+                                }}
+                                className={cn(
+                                  "text-sm my-2 font-normal bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-primary/10 p-2 space-y-1",
+                                  !isExpanded &&
+                                    "absolute top-full left-0 right-0 mt-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                                )}
+                              >
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: 0.1 }}
+                                  className="flex items-center gap-4 flex-wrap"
+                                >
+                                  <span className="flex items-center gap-1">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Rating:
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "font-medium",
+                                        professorRatings[instructorName]
+                                          .professor.ratings.overall >= 4
+                                          ? "text-green-600 dark:text-green-400"
+                                          : professorRatings[instructorName]
+                                              .professor.ratings.overall >= 3
+                                          ? "text-yellow-600 dark:text-yellow-400"
+                                          : "text-red-600 dark:text-red-400"
+                                      )}
+                                    >
+                                      {
+                                        professorRatings[instructorName]
+                                          .professor.ratings.overall
+                                      }
+                                      /5
+                                    </span>
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Difficulty:
+                                    </span>
+                                    <span className="font-medium">
+                                      {
+                                        professorRatings[instructorName]
+                                          .professor.ratings.difficulty
+                                      }
+                                      /5
+                                    </span>
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Would take again:
+                                    </span>
+                                    <span className="font-medium">
+                                      {Math.round(
+                                        professorRatings[instructorName]
+                                          .professor.ratings.wouldTakeAgain
+                                      )}
+                                      %
+                                    </span>
+                                  </span>
+                                </motion.div>
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: 0.2 }}
+                                  className="flex items-center gap-1 text-xs text-gray-500"
+                                >
+                                  <span>
+                                    {
+                                      professorRatings[instructorName].professor
+                                        .department
+                                    }
+                                  </span>
+                                  <span>•</span>
+                                  <span>
+                                    {
+                                      professorRatings[instructorName].professor
+                                        .ratings.totalRatings
+                                    }{" "}
+                                    ratings
+                                  </span>
+                                  <span>•</span>
+                                  <a
+                                    href={
+                                      professorRatings[instructorName].professor
+                                        .link
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline"
+                                  >
+                                    View on RMP
+                                  </a>
+                                </motion.div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
                     )}
                     {fieldVisibility.meetTimes &&
