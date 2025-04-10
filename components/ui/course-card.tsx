@@ -679,9 +679,9 @@ export function CourseCard({
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
                                   transition={{ delay: 0.1 }}
-                                  className="flex items-center gap-4 flex-wrap"
+                                  className="flex items-center gap-1 flex-wrap"
                                 >
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex items-center gap-1 pr-1 pb-1">
                                     <span className="text-gray-600 dark:text-gray-400">
                                       Rating:
                                     </span>
@@ -704,7 +704,7 @@ export function CourseCard({
                                       /5
                                     </span>
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex items-center gap-1 pr-1 pb-1">
                                     <span className="text-gray-600 dark:text-gray-400">
                                       Difficulty:
                                     </span>
@@ -716,7 +716,7 @@ export function CourseCard({
                                       /5
                                     </span>
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex items-center gap-1 pr-1 pb-1">
                                     <span className="text-gray-600 dark:text-gray-400">
                                       Would take again:
                                     </span>
