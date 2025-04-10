@@ -163,6 +163,7 @@ interface RatingCacheEntry {
   timestamp: number;
 }
 
+
 class RatingCache {
   private static instance: RatingCache;
   private cache: Record<string, RatingCacheEntry> = {};
@@ -173,11 +174,14 @@ class RatingCache {
       try {
         const cached = localStorage.getItem("professorRatings");
         if (cached) {
-          const parsedCache = JSON.parse(cached);
+          const parsedCache = JSON.parse(cached) as Record<
+            string,
+            RatingCacheEntry
+          >;
           const now = Date.now();
 
           // Only keep non-expired entries
-          Object.entries(parsedCache).forEach(([key, value]: [string, any]) => {
+          Object.entries(parsedCache).forEach(([key, value]) => {
             if (now - value.timestamp < CACHE_DURATION) {
               this.cache[key] = value;
             }
