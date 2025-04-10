@@ -146,6 +146,186 @@ interface RMPResponse {
   professor: RMPProfessor;
 }
 
+interface RMPNotFound {
+  notFound: true;
+}
+
+type ProfessorRating = RMPResponse | RMPNotFound;
+
+// Create a global cache for professor ratings to share across component instances
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+// Track which professors are currently being fetched globally
+const FETCHING_PROFESSORS = new Set<string>();
+
+// Store ratings in localStorage and memory
+interface RatingCacheEntry {
+  data: ProfessorRating;
+  timestamp: number;
+}
+
+class RatingCache {
+  private static instance: RatingCache;
+  private cache: Record<string, RatingCacheEntry> = {};
+
+  private constructor() {
+    // Initialize from localStorage
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("professorRatings");
+        if (cached) {
+          const parsedCache = JSON.parse(cached);
+          const now = Date.now();
+
+          // Only keep non-expired entries
+          Object.entries(parsedCache).forEach(([key, value]: [string, any]) => {
+            if (now - value.timestamp < CACHE_DURATION) {
+              this.cache[key] = value;
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error loading professor cache:", error);
+      }
+    }
+  }
+
+  public static getInstance(): RatingCache {
+    if (!RatingCache.instance) {
+      RatingCache.instance = new RatingCache();
+    }
+    return RatingCache.instance;
+  }
+
+  public get(professorName: string): ProfessorRating | null {
+    const entry = this.cache[professorName];
+    if (!entry) return null;
+
+    // Check if entry is expired
+    if (Date.now() - entry.timestamp > CACHE_DURATION) {
+      this.delete(professorName);
+      return null;
+    }
+
+    return entry.data;
+  }
+
+  public set(professorName: string, data: ProfessorRating): void {
+    this.cache[professorName] = {
+      data,
+      timestamp: Date.now(),
+    };
+
+    // Save to localStorage
+    this.saveToLocalStorage();
+  }
+
+  public delete(professorName: string): void {
+    delete this.cache[professorName];
+    this.saveToLocalStorage();
+  }
+
+  private saveToLocalStorage(): void {
+    try {
+      localStorage.setItem("professorRatings", JSON.stringify(this.cache));
+    } catch (error) {
+      console.error("Error saving professor cache to localStorage:", error);
+    }
+  }
+
+  public has(professorName: string): boolean {
+    return Boolean(this.get(professorName));
+  }
+}
+
+// Global fetch function that uses the cache
+async function fetchProfessorRatingGlobal(
+  professorName: string
+): Promise<ProfessorRating> {
+  const ratingCache = RatingCache.getInstance();
+
+  // If already in cache, return from cache
+  const cachedRating = ratingCache.get(professorName);
+  if (cachedRating) {
+    return cachedRating;
+  }
+
+  // If already fetching, wait for it to complete
+  if (FETCHING_PROFESSORS.has(professorName)) {
+    // Wait for fetch to complete by polling the cache
+    return new Promise((resolve) => {
+      const checkCache = () => {
+        const rating = ratingCache.get(professorName);
+        if (rating) {
+          resolve(rating);
+        } else if (!FETCHING_PROFESSORS.has(professorName)) {
+          // If no longer fetching but not in cache, return not found
+          resolve({ notFound: true });
+        } else {
+          // Keep checking every 100ms
+          setTimeout(checkCache, 100);
+        }
+      };
+      checkCache();
+    });
+  }
+
+  // Mark as fetching
+  FETCHING_PROFESSORS.add(professorName);
+
+  try {
+    const response = await fetch(
+      `/api/rmp?school=${encodeURIComponent(
+        "University of Florida"
+      )}&professor=${encodeURIComponent(professorName)}`
+    );
+
+    if (!response.ok) throw new Error("Failed to fetch rating");
+    const data = await response.json();
+
+    // Improved name matching logic
+    const foundProfName = data?.professor?.name?.toLowerCase().trim() || "";
+    const searchedProfName = professorName.toLowerCase().trim();
+
+    // Split names into parts and remove empty parts
+    const foundParts: string[] = foundProfName.split(/[\s,]+/).filter(Boolean);
+    const searchedParts: string[] = searchedProfName
+      .split(/[\s,]+/)
+      .filter(Boolean);
+
+    // Check if there's a significant overlap in name parts
+    const isMatch =
+      foundParts.length > 0 &&
+      searchedParts.length > 0 &&
+      // Full match
+      (foundProfName === searchedProfName ||
+        // All searched parts are found in the full name
+        searchedParts.every((part) =>
+          foundParts.some(
+            (foundPart) => foundPart.includes(part) || part.includes(foundPart)
+          )
+        ) ||
+        // All found parts are in the searched name
+        foundParts.every((part) =>
+          searchedParts.some(
+            (searchedPart) =>
+              searchedPart.includes(part) || part.includes(searchedPart)
+          )
+        ));
+
+    const result: ProfessorRating = isMatch ? data : { notFound: true };
+
+    // Update cache
+    ratingCache.set(professorName, result);
+
+    return result;
+  } catch (error) {
+    console.error(`Error fetching rating for ${professorName}:`, error);
+    return { notFound: true };
+  } finally {
+    FETCHING_PROFESSORS.delete(professorName);
+  }
+}
+
 export function CourseCard({
   code,
   name,
@@ -163,117 +343,88 @@ export function CourseCard({
   const [difficulty, setDifficulty] = useState(5);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  // Initialize ratings from localStorage if available
+  // Local state for professor ratings
   const [professorRatings, setProfessorRatings] = useState<
-    Record<string, RMPResponse>
-  >(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("professorRatings");
-        return cached ? JSON.parse(cached) : {};
-      } catch {
-        return {};
-      }
-    }
-    return {};
-  });
-
+    Record<string, ProfessorRating>
+  >({});
   const [loadingRatings, setLoadingRatings] = useState<Record<string, boolean>>(
     {}
   );
-  const fetchedProfessors = useRef<Set<string>>(new Set());
   const isMounted = useRef(false);
 
-  // Update localStorage when ratings change, but only after initial mount
-  useEffect(() => {
-    if (isMounted.current && Object.keys(professorRatings).length > 0) {
-      try {
-        localStorage.setItem(
-          "professorRatings",
-          JSON.stringify(professorRatings)
-        );
-      } catch (error) {
-        console.error("Error saving to localStorage:", error);
-      }
-    }
-  }, [professorRatings]);
-
-  // Set isMounted on initial mount
+  // Load ratings from cache and fetch missing ones
   useEffect(() => {
     isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
+    const ratingCache = RatingCache.getInstance();
 
-  const fetchProfessorRating = async (professorName: string) => {
-    // Skip if any of these conditions are true
-    if (
-      !professorName ||
-      professorName === "Staff" ||
-      loadingRatings[professorName] ||
-      professorRatings[professorName] || // Check existing ratings
-      fetchedProfessors.current.has(professorName) || // Check in-memory cache
-      !isMounted.current // Skip if component is unmounting
-    )
-      return;
-
-    // Mark as fetching before the request
-    setLoadingRatings((prev) => ({ ...prev, [professorName]: true }));
-    fetchedProfessors.current.add(professorName);
-
-    try {
-      const response = await fetch(
-        `/api/rmp?school=${encodeURIComponent(
-          "University of Florida"
-        )}&professor=${encodeURIComponent(professorName)}`
-      );
-      if (!response.ok) throw new Error("Failed to fetch rating");
-      const data = await response.json();
-
-      // Only update state if component is still mounted
-      if (isMounted.current) {
-        setProfessorRatings((prev) => ({
-          ...prev,
-          [professorName]: data,
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching professor rating:", error);
-      // Remove from cache on error to allow retry
-      fetchedProfessors.current.delete(professorName);
-    } finally {
-      if (isMounted.current) {
-        setLoadingRatings((prev) => ({ ...prev, [professorName]: false }));
-      }
-    }
-  };
-
-  // Fetch ratings only once on initial mount or when sections change
-  useEffect(() => {
-    if (!isMounted.current) return;
-
+    // Collect all unique professors
     const uniqueProfessors = new Set<string>();
     sections.forEach((section) => {
       section.instructors.forEach((instructor) => {
-        const name = instructor.name;
-        if (
-          name &&
-          name !== "Staff" &&
-          !professorRatings[name] && // Check if already in state
-          !fetchedProfessors.current.has(name) && // Check if already fetching
-          !loadingRatings[name] // Check if currently loading
-        ) {
-          uniqueProfessors.add(name);
+        if (instructor.name && instructor.name !== "Staff") {
+          uniqueProfessors.add(instructor.name);
         }
       });
     });
 
-    // Fetch ratings for new professors only
+    // First set from cache
+    const initialRatings: Record<string, ProfessorRating> = {};
+    const professorsToFetch: string[] = [];
+
     uniqueProfessors.forEach((professorName) => {
-      fetchProfessorRating(professorName);
+      const cachedRating = ratingCache.get(professorName);
+      if (cachedRating) {
+        initialRatings[professorName] = cachedRating;
+      } else if (!FETCHING_PROFESSORS.has(professorName)) {
+        professorsToFetch.push(professorName);
+      }
     });
-  }, []); // Remove professorRatings dependency
+
+    // Update state with cached ratings
+    if (Object.keys(initialRatings).length > 0) {
+      setProfessorRatings(initialRatings);
+    }
+
+    // Fetch missing ratings
+    if (professorsToFetch.length > 0) {
+      // Log what we're fetching (for debugging)
+      console.log(
+        `Fetching ${professorsToFetch.length} professors:`,
+        professorsToFetch.join(", ")
+      );
+
+      // Mark all as loading
+      const loadingState: Record<string, boolean> = {};
+      professorsToFetch.forEach((prof) => {
+        loadingState[prof] = true;
+      });
+      setLoadingRatings((prev) => ({ ...prev, ...loadingState }));
+
+      // Fetch each professor rating
+      professorsToFetch.forEach(async (professorName) => {
+        if (!isMounted.current) return;
+
+        try {
+          const rating = await fetchProfessorRatingGlobal(professorName);
+
+          if (isMounted.current) {
+            setProfessorRatings((prev) => ({
+              ...prev,
+              [professorName]: rating,
+            }));
+          }
+        } finally {
+          if (isMounted.current) {
+            setLoadingRatings((prev) => ({ ...prev, [professorName]: false }));
+          }
+        }
+      });
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [sections]);
 
   const {
     courseData,
@@ -659,111 +810,122 @@ export function CourseCard({
                               )}
                           </div>
                           <AnimatePresence>
-                            {professorRatings[instructorName]?.professor && (
-                              <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{
-                                  type: "spring",
-                                  stiffness: 500,
-                                  damping: 30,
-                                }}
-                                className={cn(
-                                  "text-sm my-2 font-normal bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-primary/10 p-2 space-y-1",
-                                  !isExpanded &&
-                                    "absolute top-full left-0 right-0 mt-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
-                                )}
-                              >
+                            {professorRatings[instructorName] &&
+                              ("notFound" in
+                              professorRatings[instructorName] ? (
                                 <motion.div
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
-                                  transition={{ delay: 0.1 }}
-                                  className="flex items-center gap-1 flex-wrap"
+                                  exit={{ opacity: 0 }}
+                                  className="text-sm text-gray-500 mt-1"
                                 >
-                                  <span className="flex items-center gap-1 pr-1 pb-1">
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                      Rating:
-                                    </span>
-                                    <span
-                                      className={cn(
-                                        "font-medium",
-                                        professorRatings[instructorName]
-                                          .professor.ratings.overall >= 4
-                                          ? "text-green-600 dark:text-green-400"
-                                          : professorRatings[instructorName]
-                                              .professor.ratings.overall >= 3
-                                          ? "text-yellow-600 dark:text-yellow-400"
-                                          : "text-red-600 dark:text-red-400"
-                                      )}
-                                    >
-                                      {
-                                        professorRatings[instructorName]
-                                          .professor.ratings.overall
-                                      }
-                                      /5
-                                    </span>
-                                  </span>
-                                  <span className="flex items-center gap-1 pr-1 pb-1">
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                      Difficulty:
-                                    </span>
-                                    <span className="font-medium">
-                                      {
-                                        professorRatings[instructorName]
-                                          .professor.ratings.difficulty
-                                      }
-                                      /5
-                                    </span>
-                                  </span>
-                                  <span className="flex items-center gap-1 pr-1 pb-1">
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                      Would take again:
-                                    </span>
-                                    <span className="font-medium">
-                                      {Math.round(
-                                        professorRatings[instructorName]
-                                          .professor.ratings.wouldTakeAgain
-                                      )}
-                                      %
-                                    </span>
-                                  </span>
+                                  Not found on RateMyProfessor
                                 </motion.div>
+                              ) : (
                                 <motion.div
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  transition={{ delay: 0.2 }}
-                                  className="flex items-center gap-1 text-xs text-gray-500"
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 30,
+                                  }}
+                                  className={cn(
+                                    "text-sm my-2 font-normal bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-primary/10 p-2 space-y-1",
+                                    !isExpanded &&
+                                      "absolute top-full left-0 right-0 mt-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                                  )}
                                 >
-                                  <span>
-                                    {
-                                      professorRatings[instructorName].professor
-                                        .department
-                                    }
-                                  </span>
-                                  <span>•</span>
-                                  <span>
-                                    {
-                                      professorRatings[instructorName].professor
-                                        .ratings.totalRatings
-                                    }{" "}
-                                    ratings
-                                  </span>
-                                  <span>•</span>
-                                  <a
-                                    href={
-                                      professorRatings[instructorName].professor
-                                        .link
-                                    }
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-500 hover:underline"
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="flex items-center gap-1 flex-wrap"
                                   >
-                                    View on RMP
-                                  </a>
+                                    <span className="flex items-center gap-1 pr-1 pb-1">
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        Rating:
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          "font-medium",
+                                          professorRatings[instructorName]
+                                            .professor.ratings.overall >= 4
+                                            ? "text-green-600 dark:text-green-400"
+                                            : professorRatings[instructorName]
+                                                .professor.ratings.overall >= 3
+                                            ? "text-yellow-600 dark:text-yellow-400"
+                                            : "text-red-600 dark:text-red-400"
+                                        )}
+                                      >
+                                        {
+                                          professorRatings[instructorName]
+                                            .professor.ratings.overall
+                                        }
+                                        /5
+                                      </span>
+                                    </span>
+                                    <span className="flex items-center gap-1 pr-1 pb-1">
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        Difficulty:
+                                      </span>
+                                      <span className="font-medium">
+                                        {
+                                          professorRatings[instructorName]
+                                            .professor.ratings.difficulty
+                                        }
+                                        /5
+                                      </span>
+                                    </span>
+                                    <span className="flex items-center gap-1 pr-1 pb-1">
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        Would take again:
+                                      </span>
+                                      <span className="font-medium">
+                                        {Math.round(
+                                          professorRatings[instructorName]
+                                            .professor.ratings.wouldTakeAgain
+                                        )}
+                                        %
+                                      </span>
+                                    </span>
+                                  </motion.div>
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="flex items-center gap-1 text-xs text-gray-500"
+                                  >
+                                    <span>
+                                      {
+                                        professorRatings[instructorName]
+                                          .professor.department
+                                      }
+                                    </span>
+                                    <span>•</span>
+                                    <span>
+                                      {
+                                        professorRatings[instructorName]
+                                          .professor.ratings.totalRatings
+                                      }{" "}
+                                      ratings
+                                    </span>
+                                    <span>•</span>
+                                    <a
+                                      href={
+                                        professorRatings[instructorName]
+                                          .professor.link
+                                      }
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-500 hover:underline"
+                                    >
+                                      View on RMP
+                                    </a>
+                                  </motion.div>
                                 </motion.div>
-                              </motion.div>
-                            )}
+                              ))}
                           </AnimatePresence>
                         </div>
                       </div>
