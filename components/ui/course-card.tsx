@@ -29,6 +29,7 @@ import { ChevronDown } from "lucide-react";
 import { cn, getColorForString } from "@/lib/utils";
 import { useCourseStore } from "@/lib/store/course-store";
 import { motion, AnimatePresence } from "framer-motion";
+import { FiUser } from "react-icons/fi";
 
 const dayCodeToName = (code: string): string => {
   const days: Record<string, string> = {
@@ -162,7 +163,6 @@ interface RatingCacheEntry {
   data: ProfessorRating;
   timestamp: number;
 }
-
 
 class RatingCache {
   private static instance: RatingCache;
@@ -801,7 +801,6 @@ export function CourseCard({
                           )}
                         >
                           <div className="flex items-center gap-2">
-                            <span>Instructor: {instructorName}</span>
                             {instructorName !== "Staff" &&
                               loadingRatings[instructorName] && (
                                 <motion.span
@@ -809,7 +808,7 @@ export function CourseCard({
                                   animate={{ opacity: 1 }}
                                   className="text-xs text-gray-500"
                                 >
-                                  Loading rating...
+                                  Loading rating for {instructorName}...
                                 </motion.span>
                               )}
                           </div>
@@ -823,7 +822,11 @@ export function CourseCard({
                                   exit={{ opacity: 0 }}
                                   className="text-sm text-gray-500 mt-1"
                                 >
-                                  Not found on RateMyProfessor
+                                  <span className="flex items-center gap-1">
+                                    <FiUser className="h-4 w-4" />
+                                    {instructorName} not found on
+                                    RateMyProfessor
+                                  </span>
                                 </motion.div>
                               ) : (
                                 <motion.div
@@ -847,6 +850,10 @@ export function CourseCard({
                                     transition={{ delay: 0.1 }}
                                     className="flex items-center gap-1 flex-wrap"
                                   >
+                                    <span className="font-medium text-base mb-1 w-full flex items-center gap-2">
+                                      <FiUser className="h-5 w-5" />
+                                      {instructorName}
+                                    </span>
                                     <span className="flex items-center gap-1 pr-1 pb-1">
                                       <span className="text-gray-600 dark:text-gray-400">
                                         Rating:
@@ -855,10 +862,10 @@ export function CourseCard({
                                         className={cn(
                                           "font-medium",
                                           professorRatings[instructorName]
-                                            .professor.ratings.overall >= 4
+                                            .professor.ratings.overall >= 3
                                             ? "text-green-600 dark:text-green-400"
                                             : professorRatings[instructorName]
-                                                .professor.ratings.overall >= 3
+                                                .professor.ratings.overall >= 2.5
                                             ? "text-yellow-600 dark:text-yellow-400"
                                             : "text-red-600 dark:text-red-400"
                                         )}
